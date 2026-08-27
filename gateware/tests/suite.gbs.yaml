@@ -1,0 +1,82 @@
+name: gatecap-tests
+description: Gatecap test suite
+
+settings:
+  max_parallel_projects: 4
+  stop_on_failure: false
+  output:
+    junit_xml: test-results/junit.xml
+    summary_json: test-results/summary.json
+    log_dir: test-results/logs
+    save_logs: true
+
+projects:
+  - name: adapter_jtag
+    path: adapter_jtag
+    tags: [ghdl, simulation, self_test]
+  - name: adapter_serial_hdlc
+    path: adapter_serial_hdlc
+    tags: [ghdl, simulation, self_test]
+  - name: adapter_spi
+    path: adapter_spi
+    tags: [ghdl, simulation, self_test]
+  - name: adapter_stream
+    path: adapter_stream
+    tags: [ghdl, simulation, self_test]
+  - name: adapter_swd
+    path: adapter_swd
+    tags: [ghdl, simulation, self_test]
+  - name: adapter_usb
+    path: adapter_usb
+    tags: [ghdl, simulation, self_test]
+  - name: axi4_stream_packer
+    path: axi4_stream_packer
+    tags: [ghdl, simulation, self_test]
+  - name: bus_explorer
+    path: bus_explorer
+    tags: [ghdl, simulation, self_test]
+  - name: bus_explorer_rack
+    path: bus_explorer_rack
+    tags: [ghdl, simulation, self_test]
+  - name: capture
+    path: capture
+    tags: [ghdl, simulation, self_test]
+  - name: capture_rle
+    path: capture_rle
+    tags: [ghdl, simulation, self_test]
+  - name: clock_measurer
+    path: clock_measurer
+    tags: [ghdl, simulation, self_test]
+  - name: control
+    path: control
+    tags: [ghdl, simulation, self_test]
+  - name: control_status
+    path: control_status
+    tags: [ghdl, simulation, self_test]
+  - name: control_status_rack
+    path: control_status_rack
+    tags: [ghdl, simulation, self_test]
+  - name: descriptor
+    path: descriptor
+    tags: [ghdl, simulation, self_test]
+  - name: generated_async
+    path: generated_async
+    tags: [ghdl, simulation, self_test]
+  - name: generated_subsystem
+    path: generated_subsystem
+    tags: [ghdl, simulation, self_test]
+  - name: rack_descriptor
+    path: rack_descriptor
+    tags: [ghdl, simulation, self_test]
+  - name: trace
+    path: trace
+    tags: [ghdl, simulation, self_test]
+  - name: trace_packed
+    path: trace_packed
+    tags: [ghdl, simulation, self_test]
+  - name: trigger_edge
+    path: trigger_edge
+    tags: [ghdl, simulation, self_test]
+  - name: two_analyzers
+    path: two_analyzers
+    tags: [ghdl, simulation, self_test]

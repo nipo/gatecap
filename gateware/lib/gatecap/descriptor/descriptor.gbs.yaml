@@ -1,0 +1,9 @@
+sources:
+  - file_type: vhdl
+    files:
+      - descriptor.pkg.vhd
+deps:
+  - nsl_data.bytestream
+  - nsl_data.cbor
+  - nsl_data.uuid
+  - nsl_data.crc

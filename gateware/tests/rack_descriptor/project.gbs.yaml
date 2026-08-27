@@ -1,0 +1,21 @@
+name: rack_descriptor
+
+root:
+  name: top
+  deps:
+    - gatecap.descriptor
+    - nsl_data.bytestream
+    - nsl_data.cbor
+    - nsl_data.text
+    - nsl_data.uuid
+  sources:
+    - file_type: vhdl
+      files:
+        - tb.vhd
+
+output:
+  - name: simulation
+    topcell: tb
+    outputs:
+      - type: simulation-log
+        path: tb.log
