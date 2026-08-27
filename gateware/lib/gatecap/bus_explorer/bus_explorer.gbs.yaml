@@ -1,0 +1,14 @@
+sources:
+  - file_type: vhdl
+    files:
+      - bus_explorer.pkg.vhd
+      - bus_explorer_shell.vhd
+      - bus_explorer_core.vhd
+
+deps:
+  - gatecap.descriptor
+  - nsl_amba.apb
+  - nsl_data.bytestream
+  - nsl_data.cbor
+  - nsl_data.uuid
+  - nsl_synthesis.assertion

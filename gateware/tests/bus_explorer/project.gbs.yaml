@@ -1,0 +1,20 @@
+name: bus_explorer
+
+root:
+  name: top
+  deps:
+    - gatecap.bus_explorer
+    - nsl_amba.apb
+    - nsl_clocking.interdomain
+    - nsl_data.text
+  sources:
+    - file_type: vhdl
+      files:
+        - tb.vhd
+
+output:
+  - name: simulation
+    topcell: tb
+    outputs:
+      - type: simulation-log
+        path: tb.log
