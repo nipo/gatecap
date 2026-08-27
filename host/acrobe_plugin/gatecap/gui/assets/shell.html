@@ -1,0 +1,511 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><title>gatecap</title>
+<style>
+  :root { color-scheme: dark; }
+  html, body { margin: 0; height: 100%; font-family: system-ui, sans-serif;
+               background: #1e1e1e; color: #e0e0e0; }
+  /* Three full-width rows: header, panes (fill), log. One instrument is one
+     pane, holding its own controls + waveform, so panes stack in the middle
+     region. */
+  body { display: grid; grid-template-rows: auto 1fr auto; height: 100vh; }
+  body.no-log #log { display: none; }
+  .pane.hidden { display: none; }
+
+  #top { grid-row: 1; display: flex; gap: .5rem; align-items: center; flex-wrap: wrap;
+         padding: .4rem .7rem; background: #2b2b2b; border-bottom: 1px solid #444; }
+  #top input { font-family: monospace; }
+  #root { width: 22rem; }
+  button { padding: .3rem .7rem; cursor: pointer; }
+  button:disabled { opacity: .5; cursor: default; }
+  .toggle { background: #3a3a3a; border: 1px solid #555; border-radius: 3px; }
+  .toggle.on { background: #38a; border-color: #4af; }
+  /* Button label = action; a LED to its left = state. */
+  #connbtn { min-width: 6rem; }
+  .led { width: .75rem; height: .75rem; border-radius: 50%; display: inline-block; }
+  .led.gray { background: #777; }
+  .led.green { background: #3c8; box-shadow: 0 0 5px #3c8; }
+  .led.yellow { background: #dd3; box-shadow: 0 0 5px #dd3; }
+  .led.red { background: #e44; box-shadow: 0 0 5px #e44; }
+  /* Stale (instance changed): keep the last trace, but block new work. */
+  body.stale #panes { pointer-events: none; opacity: .5; }
+  .pill { padding: .1rem .5rem; border-radius: 1rem; font-size: .8rem; }
+  /* An instrument's own status pill, inside its panel toggle: the driver gives
+     the text and the tone, the shell only colours it. The tones are generic --
+     an instrument that reports something gatecap has never heard of styles
+     itself with no change here. */
+  .toggle .pill { margin-left: .4rem; font-size: .72rem; padding: .05rem .4rem; }
+  .tone-idle { background:#555 }
+  .tone-active { background:#38a }
+  .tone-attention { background:#a86 }
+  .tone-error { background:#a33; color:#fff }
+  #rtt { color:#8a8; font:11px/1 monospace; }   /* round-trip time to the core */
+
+  /* The panes region: instrument panes stack, each filling an equal share. */
+  #panes { grid-row: 2; display: flex; flex-direction: column; min-height: 0;
+           overflow: auto; }
+  #panes > .info { padding: .6rem .7rem; color: #999; font-size: .85rem; }
+  /* Panes size to content; one that owns a waveform grows to fill the rest. */
+  .pane { display: flex; flex-direction: column; min-height: 0; flex: 0 0 auto;
+          border-bottom: 1px solid #444; }
+  .pane.grow { flex: 1 1 0; min-height: 8rem; }
+  .pane-wave { flex: 1 1 0; min-height: 6rem; }
+  iframe.surfer { display: block; width: 100%; height: 100%; border: 0;
+                  background: #404040; }
+  /* Shared panel design system (an instrument's panel injects into a pane). */
+  .pane-controls { display: flex; gap: .7rem; align-items: center; flex-wrap: wrap;
+                   padding: .4rem .7rem; background: #232323;
+                   border-bottom: 1px solid #333; overflow-x: auto; }
+  .pane-controls .name { font-weight: 600; }
+  .pane-controls .kind { color:#7fd1ff; font-size:.8rem; margin-left:.3rem; }
+  .pane-controls a { color:#7fd1ff; }
+  .pane-controls .prog { color:#9ac; font: 12px/1 monospace; margin-left:.3rem; }
+  /* Trace readback in flight: a bar next to the Read that started it, in the
+     colour of the "reading" pill. Hidden unless a fetch is running. */
+  .pane-controls .fetch { display: none; align-items: center; gap: .35rem; }
+  .pane-controls .fetch.on { display: flex; }
+  .pane-controls .fetch .bar { width: 5rem; height: .5rem; border-radius: 3px;
+                               background: #333; overflow: hidden; }
+  .pane-controls .fetch .bar > i { display: block; height: 100%; width: 0;
+                                   background: #86a; transition: width .2s linear; }
+  .pane-controls .fetch .pct { color:#b9d; font: 12px/1 monospace; }
+  /* An analyzer's pane lists its capture domains beside its name. */
+  .pane-controls .members { color:#9ab; font: 12px/1.4 monospace; }
+  .fld { display: flex; align-items: center; gap: .25rem; }
+  .fld label { font-size:.8rem; color:#bbb; }
+  .fld input { width: 5rem; font-family: monospace; }
+  /* Per-signal trigger editor */
+  details.trig { border: 1px solid #444; border-radius: 4px; padding: .15rem .4rem; }
+  details.trig > summary { cursor: pointer; font-size: .85rem; color: #bbb; }
+  details.trig > summary .tsum, .trig summary span { color: #7fd1ff; }
+  .trig-grid { display: flex; flex-wrap: wrap; gap: .25rem .9rem;
+               margin-top: .3rem; max-height: 40vh; overflow: auto; }
+  .sig, .busfld { display: flex; align-items: center; gap: .3rem; }
+  .sig label, .busfld label { font: 11px/1.3 monospace; color: #cdd; white-space: nowrap; }
+  .sig select { font-family: monospace; }
+  .busfld input { width: 3.4rem; font-family: monospace; }
+  .busfld input.bad { color: #ff7a7a; }            /* not valid hex */
+  .busfld input.warn { background: #4d4000; }       /* wider than the field (still used) */
+  .busfld .sl { color: #999; }
+  /* An enum bus: its label toggles combo/raw entry on double-click. */
+  .busfld.enum label { cursor: pointer; text-decoration: underline dotted #789; }
+  .busfld.enum select { font-family: monospace; }
+
+  #log { grid-row: 3; height: 8rem; overflow: auto; background: #111; color: #9cdcfe;
+         font: 12px/1.4 monospace; padding: .4rem; white-space: pre-wrap;
+         border-top: 1px solid #444; }
+</style></head>
+<body class="no-log">
+  <div id="top">
+    <b>gatecap</b>
+    <input id="root" placeholder="udp/127.0.0.1:4242/gatecap">
+    <span id="led" class="led gray" title="connection state"></span>
+    <button id="connbtn">Connect</button>
+    <span id="stale" class="pill tone-error" style="display:none"
+          title="the gateware instance changed; disconnect and reconnect to re-enumerate"
+          >stale</span>
+    <span id="rtt" title="round-trip time to the core"></span>
+    <span style="flex:1"></span>
+    <span id="panetoggles"></span>
+    <button id="tlog" class="toggle" title="show/hide the log">Log</button>
+    <select id="recent" title="recent roots"></select>
+  </div>
+
+  <div id="panes"><span class="info">Not connected. Enter a root and Connect.</span></div>
+
+  <div id="log"></div>
+
+<script>
+const $ = (id) => document.getElementById(id);
+const log = (m) => { const d = $("log"); d.textContent += m + "\n";
+                     d.scrollTop = d.scrollHeight; };
+const hx = (n) => n == null ? "?" : "0x" + (n >>> 0).toString(16).padStart(8, "0");
+// The Python Api, one POST per call: /api/<method>, JSON body = the argument
+// list. Same transport in the pywebview window and a third-party browser; a
+// non-200 rejects, like a raising call.
+const api = () => new Proxy({}, { get: (_, name) => async (...args) => {
+  const r = await fetch("/api/" + name, { method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(args) });
+  if (!r.ok) throw new Error(name + ": HTTP " + r.status);
+  return r.json();
+}});
+const sleep = (ms) => new Promise(r => setTimeout(r, ms));
+
+// Debounced, deduped per-pane config-write log. A trigger editor writes on
+// every keystroke to keep the hardware live; this logs only the settled value
+// (per-pane state on ctx.state), so "what was sent" is visible without spam.
+function logConfig(ctx, owner, summary) {
+  clearTimeout(ctx.state.logTimer);
+  ctx.state.logTimer = setTimeout(() => {
+    if (summary !== ctx.state.lastLog) {
+      log(owner.name + " <- " + summary); ctx.state.lastLog = summary;
+    }
+  }, 500);
+}
+
+// ---- panel registry + a reusable waveform surface (composition) ----
+// A panel impl: { render(ctx, el, instrument),
+// onStatus(ctx, instrument, status)? }. gatecap.Waveform wraps one Surfer
+// <iframe> so a panel owns its own display surface; independent instruments
+// get independent surfaces.
+window.gatecap = {
+  panels: {},
+  registerPanel(uuid, impl) { this.panels[uuid] = impl; },
+  Waveform: class {
+    constructor(url) {
+      this.iframe = document.createElement("iframe");
+      this.iframe.className = "surfer";
+      this.iframe.src = url;
+      // egui caches the canvas rect; nudge after init (and on resize) so the
+      // pointer mapping stays aligned.
+      this.iframe.addEventListener("load", () =>
+        [200, 800, 1600].forEach(t => setTimeout(() => this.nudge(), t)));
+      this.onresize = () => this.nudge();
+      window.addEventListener("resize", this.onresize);
+    }
+    mount(container) { container.appendChild(this.iframe); }
+    win() { return this.iframe.contentWindow; }
+    // Surfer's control entry point is exposed after its WASM finishes init.
+    async ready() {
+      try { return typeof this.win().inject_message === "function"; }
+      catch (e) { return false; }
+    }
+    inject(msg) { this.win().inject_message(JSON.stringify(msg)); }
+    // waves_loaded and get_state are not on window in the stock Surfer
+    // index; the served index is rewritten to expose them (WaveformSurface).
+    // Missing means the rewrite broke -- fail loudly rather than mis-detect.
+    async wavesLoaded() { return await this.win().waves_loaded(); }
+    // The full user state (item order, groups, colors, formats, markers,
+    // viewport) as a RON string; Surfer does not promise the format is
+    // stable across versions.
+    async state() { return await this.win().get_state(); }
+    runCommands(text) {
+      this.inject({ LoadCommandFromData: Array.from(new TextEncoder().encode(text)) });
+    }
+    nudge() { try { this.win().dispatchEvent(new Event("resize")); } catch (e) {} }
+    destroy() { window.removeEventListener("resize", this.onresize); this.iframe.remove(); }
+  },
+};
+
+// ---- toggles (a shown pane's waveform reclaims the space; nudge to re-fit) ----
+function nudgeAll() { for (const p of panes) if (p.ctx.state.wave) p.ctx.state.wave.nudge(); }
+function wireToggle(btn, cls) {
+  btn.onclick = () => {
+    document.body.classList.toggle(cls);
+    btn.classList.toggle("on", !document.body.classList.contains(cls));
+    setTimeout(nudgeAll, 0); setTimeout(nudgeAll, 250);
+  };
+}
+wireToggle($("tlog"), "no-log");
+
+// One show/hide button per instrument, in the header. An instrument whose
+// panel reports status carries its own pill inside that chip -- so several
+// instruments each show their own state, and a hidden panel still reports.
+function addPaneToggle(pane) {
+  const name = pane.instrument.name;
+  const btn = document.createElement("button");
+  btn.className = "toggle on";
+  btn.textContent = name.charAt(0).toUpperCase() + name.slice(1);
+  btn.title = "show/hide the " + name + " panel";
+  if (pane.impl.onStatus) {
+    pane.pill = document.createElement("span");
+    pane.pill.className = "pill tone-idle";
+    btn.appendChild(pane.pill);
+  }
+  btn.onclick = () => {
+    const hidden = pane.el.classList.toggle("hidden");
+    btn.classList.toggle("on", !hidden);
+    setTimeout(nudgeAll, 0); setTimeout(nudgeAll, 250);
+  };
+  $("panetoggles").appendChild(btn);
+}
+
+let desc = null;         // last describe()
+let surferUrl = null;    // shared Surfer surface URL (server-minted)
+let panes = [];          // {impl, ctx, instrument, el} per instrument
+let recents = [];        // recent roots, most-recent first (for C-<N>)
+// Connection state machine: "disconnected" | "connected" | "stale".
+// "stale" means the gateware fingerprint changed under us: keep the last
+// trace on screen but block new work until the user disconnects.
+let connState = "disconnected";
+let linkUp = true;       // transport health, tracked to log connection edges once
+
+// ---- recent roots (persisted user-side in a local config file) ----
+function renderRecent(rs) {
+  recents = rs;
+  $("recent").innerHTML = '<option value="">recent…</option>' +
+    rs.map(r => `<option>${r}</option>`).join("");
+}
+async function loadRecent() { renderRecent(await api().recent_get()); }
+async function pushRecent(r) { renderRecent(await api().recent_add(r)); }
+$("recent").onchange = (e) => {
+  if (e.target.value) { $("root").value = e.target.value; doConnect(); }
+};
+$("root").addEventListener("keydown", (e) => {
+  if (e.key === "Enter") doConnect();
+});
+
+// ---- connect / disconnect ----
+// The top bar carries the rack-level connection only: what each instrument is
+// doing lives in its own pane toggle (see paneStatus). LED: gray disconnected,
+// green connected+healthy, yellow connection lost (recoverable), red stale
+// (fatal, fingerprint mismatch). Button label is the action. `health` only
+// matters in the "connected" state.
+function setState(s, health) {
+  connState = s;
+  document.body.classList.toggle("stale", s === "stale");
+  const led = $("led"), stale = $("stale");
+  stale.style.display = s === "stale" ? "" : "none";
+  if (s === "disconnected") {
+    led.className = "led gray";
+    $("connbtn").textContent = "Connect";
+  } else {
+    $("connbtn").textContent = "Disconnect";
+    led.className = "led " + (s === "stale" ? "red" : (health ? "green" : "yellow"));
+  }
+}
+
+async function doConnect() {
+  const root = $("root").value.trim();
+  if (!root) return;
+  if (connState !== "disconnected") await doDisconnect();  // switching targets
+  log("connecting to " + root + " ...");
+  const res = await api().connect(root);
+  if (res.error) { log("connect failed: " + res.error); setState("disconnected"); return; }
+  desc = res.describe;
+  surferUrl = res.surfer_url;
+  await pushRecent(root);
+  linkUp = true;
+  setState("connected", true);
+  await renderPanels();
+  startEvents();
+  log("connected; " + desc.instruments.length + " instrument(s), fingerprint "
+      + hx(desc.fingerprint));
+  await logInfo();
+}
+
+// Dump the target's capabilities (the `gatecap info` text) into the log.
+async function logInfo() {
+  try { (await api().info()).forEach(l => log("  " + l)); } catch (e) {}
+}
+
+async function doDisconnect() {
+  setState("disconnected");
+  stopEvents();
+  for (const p of panes) if (p.ctx.state.wave) p.ctx.state.wave.destroy();
+  desc = null;
+  panes = [];
+  $("panetoggles").innerHTML = "";   // drop this connection's panel toggles
+  await api().disconnect();
+  $("panes").innerHTML = '<span class="info">Not connected. Enter a root and Connect.</span>';
+  log("disconnected");
+}
+
+$("connbtn").onclick = () => {
+  if (connState === "disconnected") doConnect(); else doDisconnect();
+};
+
+// ---- keyboard shortcuts (C- means Ctrl or Cmd) ----
+// C-r connect, C-S-r disconnect, C-<N> quick-connect recent #N (C-1 = latest),
+// C-l Arm, C-S-l Read. Digits match the physical key (e.code) so a layout that
+// needs Shift for a number (e.g. AZERTY) still triggers them without Shift.
+// Arm/Read fan out to every panel's button that opts in via data-action.
+function clickAction(name) {
+  if (connState !== "connected") return;
+  document.querySelectorAll(`[data-action="${name}"]`).forEach(b => b.click());
+}
+function quickConnectRecent(i) {
+  if (i < recents.length) { $("root").value = recents[i]; doConnect(); }
+}
+window.addEventListener("keydown", (e) => {
+  if (!(e.ctrlKey || e.metaKey)) return;   // require the C- modifier
+  const digit = /^(?:Digit|Numpad)([1-9])$/.exec(e.code);
+  if (digit) { e.preventDefault(); quickConnectRecent(+digit[1] - 1); return; }
+  const key = e.key.toLowerCase();
+  if (key === "r") { e.preventDefault(); e.shiftKey ? doDisconnect() : doConnect(); return; }
+  if (key === "l") { e.preventDefault(); clickAction(e.shiftKey ? "read" : "arm"); return; }
+});
+
+// ---- per-instrument ctx: the seam a panel talks to (all I/O is routed) ----
+function makeCtx(instrument) {
+  return {
+    instrument,
+    state: {},   // per-panel UI state (armed params, its waveform); panel-owned
+    surferUrl,
+    Waveform: window.gatecap.Waveform,
+    send: (msg) => api().instrument_message(instrument.name, msg),
+    settingsGet: () => api().settings_get(instrument.key),
+    settingsSet: (s) => api().settings_set(instrument.key, s),
+    log, sleep,
+  };
+}
+
+// Load an instrument's panel.js once per type (it self-registers by UUID). The
+// server hands each instrument its panel URL; instruments of the same type
+// share it.
+function ensurePanel(instrument) {
+  if (window.gatecap.panels[instrument.type]) return Promise.resolve();
+  return new Promise((resolve, reject) => {
+    const s = document.createElement("script");
+    s.src = instrument.panel_url;
+    s.onload = () => resolve();
+    s.onerror = () => reject(new Error("panel.js failed for " + instrument.name));
+    document.head.appendChild(s);
+  });
+}
+
+// Instantiate one pane per instrument, routed by its type UUID. An instrument
+// whose type has no registered panel is skipped (it simply shows nothing of
+// its own).
+async function renderPanels() {
+  const box = $("panes"); box.innerHTML = ""; panes = [];
+  for (const instrument of desc.instruments) {
+    try { await ensurePanel(instrument); }
+    catch (e) { log(e.message); continue; }
+    const impl = window.gatecap.panels[instrument.type];
+    if (!impl) { log("no panel for type " + instrument.type); continue; }
+    const el = document.createElement("div");
+    el.className = "pane";
+    box.appendChild(el);
+    const ctx = makeCtx(instrument);
+    await impl.render(ctx, el, instrument);
+    const pane = { impl, ctx, instrument, el };
+    panes.push(pane);
+    addPaneToggle(pane);
+  }
+}
+
+// ---- status events ----
+// One websocket, subscribed with every status-bearing pane's instrument: the
+// server runs the poll cadence and pushes each result. The shell paints the
+// pane's pill, hands the whole status to its panel (auto-read etc. live in
+// the panel), and feeds the rack-level part to handleStatus -- every status
+// is a health, fingerprint and RTT sample, whichever instrument produced it.
+// Statuses are processed one at a time, and a newer one for the same
+// instrument supersedes a queued one, so a panel handler that takes longer
+// than the cadence (an auto-read) never replays the backlog it accumulated.
+let events = null;        // the open status websocket, or null
+let inbox = [];
+let pumping = false;
+
+function startEvents() {
+  const names = panes.filter(p => p.impl.onStatus).map(p => p.instrument.name);
+  if (!names.length || events) return;
+  const ws = new WebSocket((location.protocol === "https:" ? "wss://" : "ws://")
+                           + location.host + "/events");
+  events = ws;
+  ws.onopen = () => ws.send(JSON.stringify({op: "subscribe", instruments: names}));
+  ws.onmessage = (e) => {
+    if (events !== ws) return;               // superseded or stopped
+    const m = JSON.parse(e.data);
+    if (m.event !== "status") return;
+    inbox = inbox.filter(q => q.instrument !== m.instrument);
+    inbox.push(m);
+    pump();
+  };
+  ws.onclose = () => {
+    if (events !== ws) return;               // superseded or stopped
+    events = null;
+    if (connState !== "connected") return;
+    // The server end dropped (restart, network). The session is server-side
+    // and still there, so keep it and retry; the socket coming back resumes
+    // the status stream in place.
+    if (linkUp) log("status stream lost, retrying ...");
+    linkUp = false; setState("connected", false); $("rtt").textContent = "";
+    setTimeout(() => { if (connState === "connected") startEvents(); }, 1000);
+  };
+}
+
+function stopEvents() {
+  const ws = events;
+  events = null;
+  inbox = [];
+  if (ws) ws.close();
+}
+
+async function pump() {
+  if (pumping) return;
+  pumping = true;
+  try {
+    while (inbox.length) {
+      if (connState !== "connected") { inbox = []; return; }
+      const m = inbox.shift();
+      const pane = panes.find(p => p.instrument.name === m.instrument);
+      if (!pane) continue;
+      const s = m.status;
+      paneStatus(pane, s);
+      if (!s.error) {
+        try { await pane.impl.onStatus(pane.ctx, pane.instrument, s); } catch (e) {}
+      }
+      if (!(await handleStatus(s))) { stopEvents(); return; }  // fatally stale
+    }
+  } finally {
+    pumping = false;
+  }
+}
+
+// The instrument's own pill, in its toggle chip: the driver names its state
+// and picks the tone, the shell only styles it. The triggered flag and the
+// progress string compact into the chip (the pane itself shows them in full).
+function paneStatus(pane, s) {
+  const pill = pane.pill;
+  if (!pill) return;
+  if (s.error || s.health === false) {
+    pill.className = "pill tone-error";
+    pill.textContent = "?";
+    pill.title = s.error || "unreachable";
+    return;
+  }
+  pill.className = "pill tone-" + (s.tone || "idle");
+  pill.textContent = (s.state || "") + (s.triggered ? " ▸" : "");
+  pill.title = s.progress || "";
+}
+
+// Drive the LED / RTT / stale banner / log from one poll result, whichever
+// pane produced it. Returns false when the connection is fatally stale (stop
+// the loop). Connection edges are logged once (linkUp), not every tick.
+async function handleStatus(s) {
+  // Fatal: the gateware instance changed under us (reprogram to a different
+  // build). Keep the last trace but block new work; the user must reconnect.
+  if (s.changed) {
+    setState("stale");
+    log("gateware instance changed: fingerprint " + hx(desc.fingerprint)
+        + " -> " + hx(s.fingerprint) + " -- controls disabled; "
+        + "Disconnect and reconnect to re-enumerate.");
+    return false;
+  }
+  const lost = s.reconnecting || s.health === false;
+  if (s.reconnected) {                         // transport rebuilt, target back
+    log("hardware reconnected (fingerprint " + hx(s.fingerprint) + ")");
+    await logInfo();
+    (s.replayed || []).forEach(r => log("  restored " + r.instrument
+        + (r.summary ? " <- " + r.summary : "")));
+    linkUp = true;
+  } else if (lost) {                           // non-fatal drop; keep waiting
+    if (linkUp) log("device disappeared, waiting for reconnection ...");
+    linkUp = false;
+  } else {
+    linkUp = true;
+  }
+  $("rtt").textContent = (!lost && s.latency_ms != null) ? s.latency_ms.toFixed(1) + " ms" : "";
+  setState("connected", !lost);
+  return true;
+}
+
+// WKWebView only delivers keydown to the page once a DOM element is focused;
+// after load nothing is, so the shortcuts wouldn't fire until the user clicks.
+// Focus the root field (the natural initial focus) to route keys immediately.
+function grabFocus() {
+  try { window.focus(); } catch (e) {}
+  try { $("root").focus(); } catch (e) {}
+}
+
+window.addEventListener("DOMContentLoaded", async () => {
+  setState("disconnected"); await loadRecent(); log("ready");
+  grabFocus(); setTimeout(grabFocus, 300);   // retry once for load timing
+  // Autoconnect if the CLI was given a --root (acrobe gatecap -r ... gui).
+  const root = await api().autoconnect_root();
+  if (root) { $("root").value = root; doConnect(); }
+});
+</script>
+</body></html>
