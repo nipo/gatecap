@@ -1,0 +1,8 @@
+sources:
+  - file_type: vhdl
+    files:
+      - axi4_stream_packer.pkg.vhd
+deps:
+  - nsl_amba.axi4_stream
+  - nsl_logic.bool
+  - nsl_data.text

@@ -1,0 +1,11 @@
+sources:
+  - file_type: vhdl
+    files:
+      - adapter_stream.pkg.vhd
+      - stream_adapter.vhd
+deps:
+  - nsl_amba.apb
+  - nsl_amba.axi4_stream
+  - nsl_amba.stream_apb
+  - nsl_data.bytestream
+  - gatecap.descriptor

@@ -1,0 +1,9 @@
+sources:
+  - file_type: vhdl
+    files:
+      - bnoc_packer.pkg.vhd
+deps:
+  - nsl_bnoc.framed
+  - nsl_bnoc.pipe
+  - nsl_logic.bool
+  - nsl_data.text

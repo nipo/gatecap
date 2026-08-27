@@ -1,0 +1,19 @@
+name: axi4_stream_packer
+
+root:
+  name: top
+  deps:
+    - gatecap.axi4_stream_packer
+    - nsl_amba.axi4_stream
+    - nsl_data.text
+  sources:
+    - file_type: vhdl
+      files:
+        - tb.vhd
+
+output:
+  - name: simulation
+    topcell: tb
+    outputs:
+      - type: simulation-log
+        path: tb.log

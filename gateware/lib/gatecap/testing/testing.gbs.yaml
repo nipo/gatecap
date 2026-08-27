@@ -1,0 +1,9 @@
+sources:
+  - file_type: vhdl
+    files:
+      - testing.pkg.vhd
+deps:
+  - nsl_amba.apb
+  - nsl_data.bytestream
+  - nsl_data.endian
+  - gatecap.descriptor
