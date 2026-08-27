@@ -1,0 +1,13 @@
+sources:
+  - file_type: vhdl
+    files:
+      - adapter_spi.pkg.vhd
+      - spi_adapter.vhd
+deps:
+  - gatecap.descriptor
+  - nsl_amba.apb
+  - nsl_data.bytestream
+  - nsl_logic.bool
+  - nsl_spi.slave
+  - nsl_spi.spi
+  - nsl_synthesis.assertion

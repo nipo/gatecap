@@ -1,0 +1,24 @@
+name: adapter_spi
+
+root:
+  name: top
+  deps:
+    - gatecap.adapter_spi
+    - gatecap.testing
+    - nsl_amba.apb
+    - nsl_amba.ram
+    - nsl_data.bytestream
+    - nsl_data.endian
+    - nsl_data.text
+    - nsl_spi.spi
+  sources:
+    - file_type: vhdl
+      files:
+        - tb.vhd
+
+output:
+  - name: simulation
+    topcell: tb
+    outputs:
+      - type: simulation-log
+        path: tb.log
