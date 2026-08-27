@@ -1,0 +1,33 @@
+name: cs.demo
+
+communication:
+  mode: axi4_stream
+
+instruments:
+  panel: !control-status
+    clock: clock
+    tick-counter-width: 4
+
+    control:
+      enable: 1
+      mode:
+        width: 2
+        enum:
+          0: A
+          1: B
+          2: C
+
+    status:
+      enabled: 1
+      state:
+        width: 4
+        enum:
+          0: A
+          1: B
+          2: C
+
+    tick-out:
+      - [ ping ]
+
+    tick-in:
+      - [ ping_count ]
