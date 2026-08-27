@@ -1,0 +1,4 @@
+name: gatecap_impl
+description: Gatecap gateware libraries
+libraries:
+  - path: gatecap

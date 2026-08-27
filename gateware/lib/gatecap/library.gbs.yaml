@@ -1,0 +1,18 @@
+name: gatecap
+partitions:
+  - axi4_stream_packer/axi4_stream_packer
+  - bnoc_packer/bnoc_packer
+  - capture/capture
+  - trace/trace
+  - control/control
+  - control_status/control_status
+  - clock_measurer/clock_measurer
+  - bus_explorer/bus_explorer
+  - descriptor/descriptor
+  - adapter_stream/adapter_stream
+  - adapter_swd/adapter_swd
+  - adapter_spi/adapter_spi
+  - adapter_jtag/adapter_jtag
+  - adapter_serial_hdlc/adapter_serial_hdlc
+  - adapter_usb/adapter_usb
+  - testing/testing
