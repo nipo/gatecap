@@ -1,0 +1,32 @@
+name: adapter_jtag
+
+root:
+  name: top
+  deps:
+    - gatecap.adapter_jtag
+    - gatecap.testing
+    - nsl_amba.apb
+    - nsl_amba.ram
+    - nsl_bnoc.framed
+    - nsl_bnoc.testing
+    - nsl_data.bytestream
+    - nsl_data.endian
+    - nsl_jtag.continuous_transport
+    - nsl_jtag.jtag
+    - nsl_jtag.transactor
+    - nsl_simulation.assertions
+    - nsl_simulation.driver
+    - nsl_simulation.jtag
+  sources:
+    - file_type: vhdl
+      files:
+        - tb.vhd
+
+output:
+  - name: simulation
+    topcell: tb
+    filter_vars:
+      hwdep: simulation
+    outputs:
+      - type: simulation-log
+        path: tb.log

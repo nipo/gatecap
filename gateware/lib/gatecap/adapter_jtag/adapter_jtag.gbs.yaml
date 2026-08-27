@@ -1,0 +1,12 @@
+sources:
+  - file_type: vhdl
+    files:
+      - adapter_jtag.pkg.vhd
+      - jtag_adapter.vhd
+deps:
+  - nsl_amba.apb
+  - nsl_amba.axi4_stream
+  - nsl_bnoc.axi_adapter
+  - nsl_bnoc.framed
+  - nsl_jtag.continuous_transport
+  - gatecap.adapter_stream
