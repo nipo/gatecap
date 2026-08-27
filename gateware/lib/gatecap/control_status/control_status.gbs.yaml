@@ -1,0 +1,10 @@
+sources:
+  - file_type: vhdl
+    files:
+      - control_status.pkg.vhd
+      - control_status_shell.vhd
+      - control_status_core.vhd
+deps:
+  - nsl_amba.apb
+  - nsl_math.int_ext
+  - nsl_synthesis.assertion

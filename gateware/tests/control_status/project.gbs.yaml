@@ -1,0 +1,20 @@
+name: control_status
+
+root:
+  name: top
+  deps:
+    - gatecap.control_status
+    - nsl_amba.apb
+    - nsl_clocking.interdomain
+    - nsl_math.int_ext
+  sources:
+    - file_type: vhdl
+      files:
+        - tb.vhd
+
+output:
+  - name: simulation
+    topcell: tb
+    outputs:
+      - type: simulation-log
+        path: tb.log
