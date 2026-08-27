@@ -1,0 +1,26 @@
+# One capture domain reached over USB Full Speed: the rack is a device on the
+# bus, and the phy's reference clock is the capture domain's own. That domain
+# states 60 MHz, which is the rate the phy recovers bits with, so the rack
+# takes no clock port and the adapter is given a literal.
+name: probe_pkg.usb_capture
+
+communication:
+  mode: usb
+  clock: la.sample
+
+instruments:
+  la: !logic-analyzer
+    storage:
+      buffer_depth_l2: 8
+
+    domains:
+      sample:
+        clock: clock
+        frequency: 60_000_000
+
+        signals:
+          state: !bus
+            width: 2
+            trigger: true
+          data: !bus
+            width: 8

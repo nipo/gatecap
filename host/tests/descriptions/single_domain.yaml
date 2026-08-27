@@ -1,0 +1,34 @@
+# One capture domain on the host clock, triggering on its own probes, reached
+# through the plain APB completer.
+name: probe_pkg.probe_capture
+
+communication:
+  mode: apb
+  clock: la.sample
+
+instruments:
+  la: !logic-analyzer
+    storage:
+      buffer_depth_l2: 10
+
+    capture:
+      max_windows: 4
+
+    domains:
+      sample:
+        clock: clock
+        frequency: 100_000_000
+
+        signals:
+          state: !bus
+            width: 3
+            trigger: true
+            enum:
+              0: RESET
+              1: IDLE
+              2: RUN
+              3: DONE
+          busy:
+            trigger: true
+          data: !bus
+            width: 16

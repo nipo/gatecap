@@ -1,0 +1,25 @@
+# One capture domain reached over SWD. The transport rides the capture
+# domain's clock, so nothing crosses; the two debug pins are the whole
+# host-side interface.
+name: probe_pkg.swd_capture
+
+communication:
+  mode: swd
+  clock: la.sample
+
+instruments:
+  la: !logic-analyzer
+    storage:
+      buffer_depth_l2: 10
+
+    domains:
+      sample:
+        clock: clock
+        frequency: 40_000_000
+
+        signals:
+          state: !bus
+            width: 2
+            trigger: true
+          data: !bus
+            width: 8

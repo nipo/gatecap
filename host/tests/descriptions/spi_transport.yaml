@@ -1,0 +1,32 @@
+# One capture domain reached over four wires: a memory-style SPI slave any
+# master can drive. The transport rides the capture domain's clock, and that
+# domain states its frequency, so the oversampling ratio between the host clock
+# and the highest SCK rate the master may use is fixed at elaboration.
+name: probe_pkg.spi_capture
+
+communication:
+  mode: spi
+  clock: la.sample
+  max_rate: 10_000_000
+
+instruments:
+  la: !logic-analyzer
+    storage:
+      buffer_depth_l2: 8
+
+    domains:
+      sample:
+        clock: clock
+        frequency: 100_000_000
+
+        signals:
+          state: !bus
+            width: 2
+            trigger: true
+            enum:
+              0: IDLE
+              1: RUN
+              2: HOLD
+              3: DONE
+          data: !bus
+            width: 8

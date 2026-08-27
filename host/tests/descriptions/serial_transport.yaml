@@ -1,0 +1,32 @@
+# One capture domain reached over two wires: an 8n1 UART carrying HDLC
+# frames. The transport rides the capture domain's clock, and that domain
+# states its frequency, so the core divides it down to the baud rate itself.
+name: probe_pkg.serial_capture
+
+communication:
+  mode: serial_hdlc
+  clock: la.sample
+
+instruments:
+  la: !logic-analyzer
+    storage:
+      buffer_depth_l2: 8
+
+    domains:
+      sample:
+        clock: clock
+        frequency: 100_000_000
+
+        signals:
+          state: !bus
+            width: 2
+            trigger: true
+            enum:
+              0: IDLE
+              1: RUN
+              2: HOLD
+              3: DONE
+          busy:
+            trigger: true
+          data: !bus
+            width: 8

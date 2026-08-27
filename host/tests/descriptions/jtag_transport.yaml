@@ -1,0 +1,30 @@
+# One capture domain reached over the chip's JTAG TAP. The transport has a
+# clock of its own, asynchronous to the capture clock, so every block signal
+# crosses; the TAP pins reach the entity boundary with the tie-offs the
+# transport declares.
+name: probe_pkg.jtag_capture
+
+communication:
+  mode: jtag
+
+instruments:
+  la: !logic-analyzer
+    storage:
+      buffer_depth_l2: 10
+
+    domains:
+      sample:
+        clock: clock
+        frequency: 40_000_000
+
+        signals:
+          state: !bus
+            width: 2
+            trigger: true
+            enum:
+              0: IDLE
+              1: RUN
+              2: HOLD
+              3: DONE
+          data: !bus
+            width: 8

@@ -1,0 +1,52 @@
+# Two capture domains on unrelated clocks, correlated by one trigger: the
+# transceiver capture subscribes to the control domain's trigger, so both
+# buffers are cut on the same event. The transport rides the control clock.
+name: link_pkg.link_capture
+
+communication:
+  mode: axi4_stream
+  clock: la.control
+
+instruments:
+  la: !logic-analyzer
+    storage:
+      buffer_depth_l2: 12
+
+    capture:
+      max_windows: 1
+
+    trigger:
+      capabilities: edge
+
+    domains:
+      control:
+        clock: clock
+        frequency: 25_000_000
+
+        signals:
+          command: !axi4-stream
+            trace: idskouvlr
+            trigger: vlr
+          response: !axi4-stream
+            trace: idskouvlr
+          state: !bus
+            width: 2
+            trigger: true
+            enum:
+              0: RESET
+              1: IDLE
+              2: COMMAND
+              3: RESPONSE
+
+      transceiver_rx:
+        clock: clock
+        frequency: 125_000_000
+        storage:
+          buffer_depth_l2: 10
+        trigger:
+          from: control
+
+        signals:
+          word: !bus
+            width: 8
+          k: {}

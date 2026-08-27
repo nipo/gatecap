@@ -1,0 +1,10 @@
+#!/bin/sh
+# Regenerate every rack in the gateware tree from its description.
+# Generated cores are not committed; run this before building a bench
+# or example that carries a description.yaml. Needs the host plugin
+# installed (doc/host/install).
+set -e
+cd "$(dirname "$0")"
+find . -name description.yaml -not -path '*/gbs-build/*' | sort | while read -r d; do
+    acrobe gatecap generate "$d" -o "$(dirname "$d")/generated"
+done

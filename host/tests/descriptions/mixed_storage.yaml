@@ -1,0 +1,52 @@
+# Three domains, none of them on the transport clock: a trigger-only domain
+# watching an external condition, a run-length-encoded capture subscribing to
+# it, and a byte-lane packed capture triggering on its own probes.
+name: mixed_pkg.mixed_capture
+
+communication:
+  mode: apb
+
+instruments:
+  la: !logic-analyzer
+    domains:
+      sync:
+        clock: clock
+        frequency: 50_000_000
+
+        signals:
+          fault:
+            trace: false
+            trigger: true
+          phase: !bus
+            width: 2
+            trace: false
+            trigger: true
+
+      slow:
+        clock: clock
+        frequency: 1_000_000
+        storage:
+          buffer_depth_l2: 9
+          rle: true
+        trigger:
+          from: sync
+
+        signals:
+          request:
+          grant:
+          address: !bus
+            width: 12
+
+      fast:
+        clock: clock
+        frequency: 200_000_000
+        storage:
+          buffer_depth_l2: 11
+          packed: true
+
+        signals:
+          valid:
+            trigger: true
+          symbol: !bus
+            width: 5
+            trigger: true
