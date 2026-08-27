@@ -1,0 +1,18 @@
+name: trigger_edge
+
+root:
+  name: top
+  deps:
+    - gatecap.control
+    - nsl_amba.apb
+  sources:
+    - file_type: vhdl
+      files:
+        - tb.vhd
+
+output:
+  - name: simulation
+    topcell: tb
+    outputs:
+      - type: simulation-log
+        path: tb.log

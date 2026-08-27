@@ -1,0 +1,11 @@
+sources:
+  - file_type: vhdl
+    files:
+      - control.pkg.vhd
+      - capture_control.vhd
+      - capture_control_rle.vhd
+      - trigger_control.vhd
+      - trigger_control_edge.vhd
+deps:
+  - nsl_amba.apb
+  - nsl_clocking.interdomain
