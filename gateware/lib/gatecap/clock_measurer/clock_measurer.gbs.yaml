@@ -1,0 +1,15 @@
+sources:
+  - file_type: vhdl
+    files:
+      - clock_measurer.pkg.vhd
+      - clock_rate_block.vhd
+
+deps:
+  - gatecap.descriptor
+  - nsl_amba.apb
+  - nsl_clocking.async
+  - nsl_clocking.interdomain
+  - nsl_data.bytestream
+  - nsl_data.cbor
+  - nsl_data.uuid
+  - nsl_synthesis.assertion

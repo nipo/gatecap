@@ -1,0 +1,19 @@
+name: clock_measurer
+
+root:
+  name: top
+  deps:
+    - gatecap.clock_measurer
+    - nsl_amba.apb
+    - nsl_data.text
+  sources:
+    - file_type: vhdl
+      files:
+        - tb.vhd
+
+output:
+  - name: simulation
+    topcell: tb
+    outputs:
+      - type: simulation-log
+        path: tb.log
