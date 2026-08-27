@@ -1,0 +1,17 @@
+gbs-build
+*.log
+*.vcd
+*.ghw
+__pycache__/
+*.pyc
+/gateware/tests/*/tb
+/gateware/example/*/tb
+*.egg-info/
+.pytest_cache/
+.DS_Store
+/host/gui_phase0/surfer_assets/
+/host/acrobe_plugin/gatecap/gui/surfer_assets/
+*.fs
+/doc/_build/
+/gateware/tests/*/generated/
+/gateware/example/*/generated/

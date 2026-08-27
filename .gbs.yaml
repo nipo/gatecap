@@ -1,0 +1,5 @@
+repositories:
+  - path: ../nsl/lib
+    loader: nsl-tree
+  - path: gateware/lib/repository.gbs.yaml
+    loader: yaml
