@@ -1,0 +1,48 @@
+# Regenerate the VHDL sitting in generated/ with:
+#
+#   cd host && python3.13 -m acrobe gatecap generate \
+#     ../gateware/tests/two_analyzers/description.yaml \
+#     -o ../gateware/tests/two_analyzers/generated/
+#
+# Two logic analyzers in one rack. Both hold a domain called "control",
+# so their boundary ports only differ by the instance name; their
+# footprints differ, so allocation has to align the larger one on its own
+# size and back-fill the smaller below it.
+name: twola_pkg.twola_core
+
+communication:
+  mode: apb
+  clock: front.control
+
+instruments:
+  front: !logic-analyzer
+    storage:
+      buffer_depth_l2: 6
+    domains:
+      control:
+        clock: clock
+        frequency: 100_000_000
+        signals:
+          state: !bus
+            width: 4
+            trigger: true
+
+  back: !logic-analyzer
+    storage:
+      buffer_depth_l2: 10
+      packed: true
+    domains:
+      control:
+        clock: clock
+        frequency: 50_000_000
+        signals:
+          word: !bus
+            width: 8
+            trigger: true
+      aux:
+        clock: clock
+        frequency: 25_000_000
+        trigger:
+          from: control
+        signals:
+          flag: {}

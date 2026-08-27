@@ -1,0 +1,32 @@
+name: bus_explorer_rack
+
+root:
+  name: top
+  deps:
+    - gatecap.bus_explorer
+    - gatecap.descriptor
+    - nsl_amba.address
+    - nsl_amba.apb
+    - nsl_amba.apb_routing
+    - nsl_amba.rom
+    - nsl_clocking.interdomain
+    - nsl_data.bytestream
+    - nsl_data.text
+    - nsl_math.arith
+    - nsl_memory.rom
+    - nsl_synthesis.assertion
+  sources:
+    - file_type: vhdl
+      files:
+        - generated/explorer_rack_gt0.vhd
+        - generated/explorer_pkg.pkg.vhd
+        - generated/explorer_rack_backplane.vhd
+        - generated/explorer_rack.vhd
+        - tb.vhd
+
+output:
+  - name: simulation
+    topcell: tb
+    outputs:
+      - type: simulation-log
+        path: tb.log

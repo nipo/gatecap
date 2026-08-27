@@ -1,0 +1,33 @@
+name: generated_async
+
+root:
+  name: top
+  deps:
+    - gatecap.capture
+    - gatecap.control
+    - gatecap.descriptor
+    - gatecap.trace
+    - nsl_amba.address
+    - nsl_amba.apb
+    - nsl_amba.apb_routing
+    - nsl_amba.rom
+    - nsl_clocking.interdomain
+    - nsl_data.bytestream
+    - nsl_math.arith
+    - nsl_memory.rom
+    - nsl_synthesis.assertion
+  sources:
+    - file_type: vhdl
+      files:
+        - generated/async_capture_la.vhd
+        - generated/async_pkg.pkg.vhd
+        - generated/async_capture_backplane.vhd
+        - generated/async_capture.vhd
+        - tb.vhd
+
+output:
+  - name: simulation
+    topcell: tb
+    outputs:
+      - type: simulation-log
+        path: tb.log

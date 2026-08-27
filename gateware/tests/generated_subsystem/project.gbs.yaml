@@ -1,0 +1,33 @@
+name: generated_subsystem
+
+root:
+  name: top
+  deps:
+    - gatecap.capture
+    - gatecap.control
+    - gatecap.descriptor
+    - gatecap.trace
+    - nsl_amba.address
+    - nsl_amba.apb
+    - nsl_amba.apb_routing
+    - nsl_amba.rom
+    - nsl_clocking.interdomain
+    - nsl_data.bytestream
+    - nsl_math.arith
+    - nsl_memory.rom
+    - nsl_synthesis.assertion
+  sources:
+    - file_type: vhdl
+      files:
+        - generated/gen_capture_la.vhd
+        - generated/gen_pkg.pkg.vhd
+        - generated/gen_capture_backplane.vhd
+        - generated/gen_capture.vhd
+        - tb.vhd
+
+output:
+  - name: simulation
+    topcell: tb
+    outputs:
+      - type: simulation-log
+        path: tb.log

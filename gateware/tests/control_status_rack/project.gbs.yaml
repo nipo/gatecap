@@ -1,0 +1,33 @@
+name: control_status_rack
+
+root:
+  name: top
+  deps:
+    - gatecap.control_status
+    - gatecap.descriptor
+    - nsl_amba.address
+    - nsl_amba.apb
+    - nsl_amba.apb_routing
+    - nsl_amba.rom
+    - nsl_clocking.interdomain
+    - nsl_data.bytestream
+    - nsl_math.arith
+    - nsl_math.int_ext
+    - nsl_memory.rom
+    - nsl_synthesis.assertion
+  sources:
+    - file_type: vhdl
+      files:
+        - generated/panel_rack_panel.vhd
+        - generated/panel_rack_mini.vhd
+        - generated/panel_pkg.pkg.vhd
+        - generated/panel_rack_backplane.vhd
+        - generated/panel_rack.vhd
+        - tb.vhd
+
+output:
+  - name: simulation
+    topcell: tb
+    outputs:
+      - type: simulation-log
+        path: tb.log

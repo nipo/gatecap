@@ -1,0 +1,36 @@
+# Regenerate the VHDL sitting in generated/ with:
+#
+#   cd host && python3.13 -m acrobe gatecap generate \
+#     ../gateware/tests/generated_async/description.yaml \
+#     -o ../gateware/tests/generated_async/generated/
+#
+# One capture domain on a clock of its own: the communication section names no
+# clock, so the rack takes dedicated host clock and reset ports and the
+# analyzer's only domain is asynchronous to them. Config and arm cross in,
+# status and head cross back out. Same dimensioning as the synchronous
+# generated_subsystem bench, so the two differ by the crossings alone.
+name: async_pkg.async_capture
+
+communication:
+  mode: apb
+
+instruments:
+  la: !logic-analyzer
+    storage:
+      buffer_depth_l2: 6
+
+    capture:
+      max_windows: 1
+
+    trigger:
+      capabilities: value
+
+    domains:
+      sample:
+        clock: clock
+        frequency: 143_000_000
+
+        signals:
+          count: !bus
+            width: 8
+            trigger: true

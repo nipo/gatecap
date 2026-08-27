@@ -1,0 +1,37 @@
+# Regenerate the VHDL sitting next to this file with:
+#
+#   cd host && python3.13 -m acrobe gatecap generate \
+#     ../gateware/tests/generated_subsystem/description.yaml \
+#     -o ../gateware/tests/generated_subsystem/generated/
+#
+# One capture domain on the host clock, eight probed bits feeding both the
+# capture vector and a value/mask trigger, reached through the plain APB
+# completer: the smallest thing the generator emits, and the synchronous
+# counterpart of the generated_async bench -- same dimensioning, so the two
+# differ by the clock-domain crossings alone.
+name: gen_pkg.gen_capture
+
+communication:
+  mode: apb
+  clock: la.sample
+
+instruments:
+  la: !logic-analyzer
+    storage:
+      buffer_depth_l2: 6
+
+    capture:
+      max_windows: 1
+
+    trigger:
+      capabilities: value
+
+    domains:
+      sample:
+        clock: clock
+        frequency: 100_000_000
+
+        signals:
+          count: !bus
+            width: 8
+            trigger: true

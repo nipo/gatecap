@@ -1,0 +1,52 @@
+# Regenerate the VHDL sitting next to this file with:
+#
+#   cd host && python3.13 -m acrobe gatecap generate \
+#     ../gateware/tests/control_status_rack/description.yaml \
+#     -o ../gateware/tests/control_status_rack/generated/
+#
+# Two control/status panels behind the plain APB completer. "panel" runs on a
+# clock of its own, so every crossing of the inner contract is instantiated;
+# "mini" names no clock and leaves two of the four kinds out, so its crossings
+# collapse to wires and its boundary arrays are null.
+name: panel_pkg.panel_rack
+
+communication:
+  mode: apb
+
+instruments:
+  panel: !control-status
+    clock: clk
+    tick-counter-width: 4
+
+    control:
+      led: 1
+      dac_level: 12
+      mode:
+        width: 2
+        enum:
+          0: idle
+          1: run
+          2: test
+
+    status:
+      state:
+        width: 4
+        enum:
+          0: reset
+          1: idle
+          2: busy
+      done: 1
+
+    tick-out:
+      - [ start, stop ]
+      - [ soft_reset ]
+
+    tick-in:
+      - [ overflow, underflow ]
+
+  mini: !control-status
+    control:
+      gate: 1
+
+    tick-in:
+      - [ pulse ]
