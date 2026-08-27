@@ -1,0 +1,44 @@
+name: socket_spi
+
+root:
+  name: top
+  deps:
+    - gatecap.adapter_spi
+    - gatecap.capture
+    - gatecap.control
+    - gatecap.control_status
+    - gatecap.descriptor
+    - gatecap.trace
+    - nsl_amba.address
+    - nsl_amba.apb
+    - nsl_amba.apb_routing
+    - nsl_amba.axi4_stream
+    - nsl_amba.rom
+    - nsl_amba.stream_to_udp
+    - nsl_bnoc.axi_adapter
+    - nsl_bnoc.framed
+    - nsl_clocking.interdomain
+    - nsl_data.bytestream
+    - nsl_io.io
+    - nsl_math.arith
+    - nsl_math.int_ext
+    - nsl_memory.rom
+    - nsl_spi.spi
+    - nsl_spi.transactor
+    - nsl_synthesis.assertion
+  sources:
+    - file_type: vhdl
+      files:
+        - generated/spi_rack_la.vhd
+        - generated/spi_rack_panel.vhd
+        - generated/spi_pkg.pkg.vhd
+        - generated/spi_rack_backplane.vhd
+        - generated/spi_rack.vhd
+        - tb.vhd
+
+output:
+  - name: simulation
+    topcell: tb
+    outputs:
+      - type: simulator
+        path: tb

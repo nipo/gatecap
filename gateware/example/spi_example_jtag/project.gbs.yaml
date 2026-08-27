@@ -1,0 +1,52 @@
+name: spi_example_jtag
+
+root:
+  name: top
+  deps:
+    - gatecap.adapter_jtag
+    - gatecap.bnoc_packer
+    - gatecap.capture
+    - gatecap.control
+    - gatecap.descriptor
+    - gatecap.trace
+    - nsl_amba.address
+    - nsl_amba.apb
+    - nsl_amba.apb_routing
+    - nsl_amba.axi4_stream
+    - nsl_amba.rom
+    - nsl_amba.stream_apb
+    - nsl_amba.stream_to_udp
+    - nsl_bnoc.axi_adapter
+    - nsl_bnoc.framed
+    - nsl_clocking.interdomain
+    - nsl_data.bytestream
+    - nsl_io.io
+    - nsl_jtag.continuous_transport
+    - nsl_jtag.jtag
+    - nsl_jtag.transactor
+    - nsl_math.arith
+    - nsl_memory.ram
+    - nsl_memory.rom
+    - nsl_simulation.driver
+    - nsl_simulation.jtag
+    - nsl_spi.slave
+    - nsl_spi.spi
+    - nsl_spi.transactor
+    - nsl_synthesis.assertion
+  sources:
+    - file_type: vhdl
+      files:
+        - generated/spi_jtag_capture_la.vhd
+        - generated/spi_probe.pkg.vhd
+        - generated/spi_jtag_capture_backplane.vhd
+        - generated/spi_jtag_capture.vhd
+        - tb.vhd
+
+output:
+  - name: simulation
+    topcell: tb
+    filter_vars:
+      hwdep: simulation
+    outputs:
+      - type: simulator
+        path: tb

@@ -1,0 +1,33 @@
+name: clock_rates
+
+root:
+  name: top
+  deps:
+    - gatecap.adapter_stream
+    - gatecap.clock_measurer
+    - gatecap.descriptor
+    - nsl_amba.address
+    - nsl_amba.apb
+    - nsl_amba.apb_routing
+    - nsl_amba.axi4_stream
+    - nsl_amba.rom
+    - nsl_amba.stream_to_udp
+    - nsl_data.bytestream
+    - nsl_math.arith
+    - nsl_memory.rom
+    - nsl_simulation.driver
+    - nsl_synthesis.assertion
+  sources:
+    - file_type: vhdl
+      files:
+        - generated/clkrate_pkg.pkg.vhd
+        - generated/clkrate_core_backplane.vhd
+        - generated/clkrate_core.vhd
+        - tb.vhd
+
+output:
+  - name: simulation
+    topcell: tb
+    outputs:
+      - type: simulator
+        path: tb

@@ -1,0 +1,41 @@
+# Regenerate the VHDL sitting in generated/ with:
+#
+#   cd host && python3.13 -m acrobe gatecap generate \
+#     ../gateware/example/socket/description.yaml \
+#     -o ../gateware/example/socket/generated/
+#
+# The reference socket harness: one capture domain on the clock the stream
+# transport rides, eight bits probed one by one so the descriptor names them
+# individually, and a value/mask trigger watching all of them. The bench feeds
+# a free-running counter, so a captured trace reads back as consecutive values.
+name: socket_pkg.socket_capture
+
+communication:
+  mode: axi4_stream
+  clock: la.control
+
+instruments:
+  la: !logic-analyzer
+    storage:
+      buffer_depth_l2: 6
+
+    capture:
+      max_windows: 1
+
+    trigger:
+      capabilities: value
+
+    domains:
+      control:
+        clock: clock
+        frequency: 100_000_000
+
+        signals:
+          count0: {trigger: true}
+          count1: {trigger: true}
+          count2: {trigger: true}
+          count3: {trigger: true}
+          count4: {trigger: true}
+          count5: {trigger: true}
+          count6: {trigger: true}
+          count7: {trigger: true}

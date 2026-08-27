@@ -1,0 +1,36 @@
+name: socket_enum
+
+root:
+  name: top
+  deps:
+    - gatecap.adapter_stream
+    - gatecap.capture
+    - gatecap.control
+    - gatecap.descriptor
+    - gatecap.trace
+    - nsl_amba.address
+    - nsl_amba.apb
+    - nsl_amba.apb_routing
+    - nsl_amba.axi4_stream
+    - nsl_amba.rom
+    - nsl_amba.stream_to_udp
+    - nsl_clocking.interdomain
+    - nsl_data.bytestream
+    - nsl_math.arith
+    - nsl_memory.rom
+    - nsl_synthesis.assertion
+  sources:
+    - file_type: vhdl
+      files:
+        - generated/enum_capture_la.vhd
+        - generated/enum_pkg.pkg.vhd
+        - generated/enum_capture_backplane.vhd
+        - generated/enum_capture.vhd
+        - tb.vhd
+
+output:
+  - name: simulation
+    topcell: tb
+    outputs:
+      - type: simulator
+        path: tb

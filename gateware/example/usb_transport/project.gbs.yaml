@@ -1,0 +1,46 @@
+name: gatecap_usb
+
+root:
+  name: top
+  deps:
+    - nsl_hwdep.clock
+    - nsl_hwdep.reset
+    - nsl_clocking.async
+    - nsl_clocking.pll
+    - nsl_clocking.distribution
+    - nsl_indication.activity
+    - nsl_usb.io
+    - generated.demo_package
+  sources:
+    - file_type: vhdl
+      files:
+        - main.vhd
+    - file_type: gowin-cst
+      files:
+        - constraint/usb11.cst
+        - constraint/done_led.cst
+        - constraint/ready_led.cst
+        - constraint/buttons.cst
+        - constraint/clk.cst
+    - file_type: gowin-sdc
+      files:
+        - constraint/clk.sdc
+
+output:
+  - name: synthesis
+    topcell: main
+    target:
+      part: GW5AT-LV60PG484AC1/I0#B
+      use_as_gpio:
+        - sspi
+        - mspi
+        - done
+        - ready
+        - cpu
+    outputs:
+      - type: bitstream
+        path: usb11.fs
+
+repositories:
+  - path: generated/repository.gbs.yaml
+    loader: yaml

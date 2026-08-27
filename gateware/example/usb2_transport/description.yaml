@@ -1,0 +1,43 @@
+name: spi_probe.spi_usb2_capture
+
+communication:
+  mode: axi4_stream
+  clock: la.spi
+
+instruments:
+  la: !logic-analyzer
+    storage:
+      # 1024 samples at 60 MHz: 17 us, enough for a whole SPI transaction at
+      # the rates the transactor reaches.
+      buffer_depth_l2: 10
+
+    capture:
+      # Eight windows in one run, so a burst of transactions is cut one window
+      # each instead of filling the buffer with the gaps between them.
+      max_windows: 8
+
+    trigger:
+      capabilities: edge
+
+    domains:
+      spi:
+        clock: clock
+        frequency: 60_000_000
+
+        signals:
+          sck: {}
+          # Chip select frames a transaction: its falling edge is the natural
+          # trigger for capturing one.
+          cs_n:
+            trigger: true
+          mosi: {}
+          miso: {}
+
+          # The transactor's framed command and response streams, probed
+          # whole, valid/ready/last/data in that order. The trigger watches the
+          # command stream without its frame boundary.
+          command: !bnoc-framed
+            trace: vrld
+            trigger: vrd
+          response: !bnoc-framed
+            trace: vrld

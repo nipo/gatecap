@@ -1,0 +1,31 @@
+# Regenerate the VHDL sitting in generated/ with:
+#
+#   cd host && python3.13 -m acrobe gatecap generate \
+#     ../gateware/example/bus_explorer/description.yaml \
+#     -o ../gateware/example/bus_explorer/generated/
+#
+# An instrument-only rack: nothing captured, one bus explorer and the transport
+# that reaches it. The target bus runs on a clock of its own, unrelated to the
+# host clock, so every command and every answer crosses the instrument's
+# domain boundary -- which is what the host drives on each access.
+#
+# The timeout is 1024 host cycles rather than the 65536 the hardware defaults
+# to: the bench holds one address that answers far too late, and a real default
+# timeout would be most of a millisecond of simulated time.
+#
+# The map identifier names the SVD document of the stub device behind the
+# target port. Nothing in the rack knows what it means: the host resolves it
+# against the documents the user registered, and shows raw hex when it cannot.
+name: busx_pkg.busx_core
+
+communication:
+  mode: axi4_stream
+
+instruments:
+  dut: !bus-explorer
+    clock: busclk
+    address-width: 12
+    data-width: 32
+    slots: 8
+    map: gatecap-demo-device
+    timeout: 1024

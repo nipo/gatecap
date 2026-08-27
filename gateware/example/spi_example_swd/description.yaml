@@ -1,0 +1,56 @@
+# Regenerate the VHDL sitting in generated/ with:
+#
+#   cd host && python3.13 -m acrobe gatecap generate \
+#     ../gateware/example/spi_example_swd/description.yaml \
+#     -o ../gateware/example/spi_example_swd/generated/
+#
+# A capture core reached over SWD: the core carries its own debug port, so a
+# stock two-wire debug probe is the whole host-side interface. The probed
+# design is an SPI transactor driving an SPI memory target, so an armed
+# capture cut on a chip-select edge holds a whole transaction -- the SPI wires
+# and the command/response frames that produced them.
+#
+# The bench serving this core (tb.vhd) binds two UDP ports: 4249 for the SWD
+# probe, reached as
+#
+#   udp/127.0.0.1:4249/nsl_swd(fin=100M)/dp(ap_probe=0)
+#
+# and 4250 for the SPI transactor, reached as udp/127.0.0.1:4250/nsl_spi/cs0.
+name: spi_probe.spi_swd_capture
+
+communication:
+  mode: swd
+  clock: la.spi
+
+instruments:
+  la: !logic-analyzer
+    storage:
+      # 4096 samples at 100 MHz: 40 us, enough for a whole SPI transaction at the
+      # rates the transactor reaches.
+      buffer_depth_l2: 12
+
+    capture:
+      max_windows: 1
+
+    trigger:
+      capabilities: edge
+
+    domains:
+      spi:
+        clock: clock
+        frequency: 100_000_000
+
+        signals:
+          sck: {}
+          # Chip select frames a transaction: its falling edge is the natural
+          # trigger for capturing one.
+          cs_n:
+            trigger: true
+          mosi: {}
+          miso: {}
+
+          # The transactor's framed command and response streams, probed whole:
+          # the bnoc packer lays out data/valid/last/ready and names them.
+          command: !bnoc-framed
+            trigger: vlr
+          response: !bnoc-framed {}

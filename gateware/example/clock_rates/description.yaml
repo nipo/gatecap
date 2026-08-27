@@ -1,0 +1,28 @@
+# Regenerate the VHDL sitting in generated/ with:
+#
+#   cd host && python3.13 -m acrobe gatecap generate \
+#     ../gateware/example/clock_rates/description.yaml \
+#     -o ../gateware/example/clock_rates/generated/
+#
+# An instrument-only rack: nothing captured, one clock measurer and the
+# transport that reaches it. With no capture domain to borrow a clock from,
+# the transport takes dedicated clock_i/reset_n_i ports, so the register file
+# runs on a host clock unrelated to the reference the measurement is taken
+# against -- which is what puts the instrument's clock crossing under test.
+#
+# update_hz_l2 is 14 here, not the once-per-second the hardware default is: the
+# measurement window is one reference second divided by 2**update_hz_l2, and a
+# real one-second window is not something a simulation reaches. At 14 it is
+# 6103 reference cycles, ~61 us, and rates come out to the nearest 16384 Hz.
+name: clkrate_pkg.clkrate_core
+
+communication:
+  mode: axi4_stream
+
+instruments:
+  rates: !clock-measurer
+    reference: ref
+    frequency: 100_000_000
+    clocks: [fast, slow, odd]
+    max_rate: 200_000_000
+    update_hz_l2: 14

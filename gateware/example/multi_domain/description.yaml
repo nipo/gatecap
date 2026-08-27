@@ -1,0 +1,36 @@
+name: multidomain.multidomain_capture
+
+communication:
+  mode: axi4_stream
+
+instruments:
+  la: !logic-analyzer
+    storage:
+      buffer_depth_l2: 8
+    #  rle: true
+
+    capture:
+      max_windows: 1
+
+    trigger:
+      capabilities: value
+
+    domains:
+      gen:
+        clock: clock
+        frequency: 100_000_000
+
+        signals:
+          tx: !axi4-stream
+            trigger: vlr
+          rx: !axi4-stream {}
+
+      lb:
+        clock: clock
+        frequency: 200_000_000
+        trigger:
+          from: gen
+
+        signals:
+          rx: !axi4-stream {}
+          tx: !axi4-stream {}

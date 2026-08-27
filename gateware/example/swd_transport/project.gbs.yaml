@@ -1,0 +1,82 @@
+name: gatecap_usb2
+
+root:
+  name: top
+  deps:
+    - gatecap.adapter_swd
+    - gatecap.bnoc_packer
+    - gatecap.capture
+    - gatecap.control
+    - gatecap.descriptor
+    - gatecap.trace
+    - nsl_amba.address
+    - nsl_amba.apb
+    - nsl_amba.apb_routing
+    - nsl_amba.axi4_mm
+    - nsl_amba.axi_apb
+    - nsl_amba.rom
+    - nsl_bnoc.axi_adapter
+    - nsl_bnoc.framed
+    - nsl_bnoc.chunked_link
+    - nsl_bnoc.pipe
+    - nsl_clocking.async
+    - nsl_clocking.distribution
+    - nsl_clocking.interdomain
+    - nsl_clocking.pll
+    - nsl_coresight.ap
+    - nsl_coresight.dapbus
+    - nsl_coresight.dp
+    - nsl_coresight.swd
+    - nsl_data.bytestream
+    - nsl_hwdep.clock
+    - nsl_hwdep.reset
+    - nsl_indication.activity
+    - nsl_math.arith
+    - nsl_memory.rom
+    - nsl_spi.transactor
+    - nsl_synthesis.assertion
+    - nsl_usb.fs_phy
+    - nsl_usb.func
+    - nsl_usb.io
+    - nsl_usb.usb
+    - nsl_usb.utmi
+  sources:
+    - file_type: verilog
+      files:
+        - phy/usb2_0_softphy.v
+    - file_type: vhdl
+      files:
+        - phy/softphy.pkg.vhd
+        - phy/gw_usb2_phy.vhd
+        - generated/spi_swd_capture_la.vhd
+        - generated/spi_probe.pkg.vhd
+        - generated/spi_swd_capture_backplane.vhd
+        - generated/spi_swd_capture.vhd
+        - main.vhd
+    - file_type: gowin-cst
+      files:
+        - constraint/usb2.cst
+        - constraint/swd.cst
+        - constraint/spi_flash.cst
+        - constraint/done_led.cst
+        - constraint/ready_led.cst
+        - constraint/buttons.cst
+        - constraint/clk.cst
+    - file_type: gowin-sdc
+      files:
+        - constraint/clk.sdc
+
+output:
+  - name: synthesis
+    topcell: main
+    target:
+      part: GW5AT-LV60PG484AC1/I0#B
+      use_as_gpio:
+        - sspi
+        - mspi
+        - done
+        - ready
+        - cpu
+    outputs:
+      - type: bitstream
+        path: usb2.fs

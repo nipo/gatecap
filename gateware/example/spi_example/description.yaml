@@ -1,0 +1,56 @@
+# Regenerate the VHDL sitting in generated/ with:
+#
+#   cd host && python3.13 -m acrobe gatecap generate \
+#     ../gateware/example/spi_example/description.yaml \
+#     -o ../gateware/example/spi_example/generated/
+#
+# A capture core reached over a stream port, probing an SPI link: the SPI wires
+# and the whole command/response framed buses of the transactor that drives
+# them, so an armed capture holds a transaction as a protocol analyser
+# (sigrok) reads it back. Four windows fit in the buffer, so several
+# transactions can be cut in one run.
+#
+# The bench serving this core (tb.vhd) binds UDP 4242 for the capture link and
+# 4243 for the framed SPI transactor commands.
+name: spi_probe.spi_stream_capture
+
+communication:
+  mode: axi4_stream
+  clock: la.spi
+
+instruments:
+  la: !logic-analyzer
+    storage:
+      # 4096 samples: the buffer read space is 16 KiB, past the 4 KiB a
+      # register file decodes, so the analyzer's regions grow with it. Big
+      # enough for a whole SPI read transaction, or several segmented windows.
+      buffer_depth_l2: 12
+
+    capture:
+      max_windows: 4
+
+    trigger:
+      capabilities: value
+
+    domains:
+      spi:
+        clock: clock
+        frequency: 100_000_000
+
+        signals:
+          sck:
+            trigger: true
+          cs_n:
+            trigger: true
+          mosi:
+            trigger: true
+          miso:
+            trigger: true
+
+          # The transactor's framed command and response streams, probed
+          # whole: the bnoc packer lays out data/valid/last/ready and names
+          # them. The trigger watches the same fields.
+          command: !bnoc-framed
+            trigger: dvlr
+          response: !bnoc-framed
+            trigger: dvlr

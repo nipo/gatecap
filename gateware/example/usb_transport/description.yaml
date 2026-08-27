@@ -1,0 +1,15 @@
+name: demo_package.demo_core
+
+communication:
+  mode: usb
+
+instruments:
+  panel: !control-status
+    clock: clock
+    tick-counter-width: 8
+
+    control:
+      led: 1
+
+    status:
+      s2: 1

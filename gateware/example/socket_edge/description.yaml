@@ -1,0 +1,41 @@
+# Regenerate the VHDL sitting in generated/ with:
+#
+#   cd host && python3.13 -m acrobe gatecap generate \
+#     ../gateware/example/socket_edge/description.yaml \
+#     -o ../gateware/example/socket_edge/generated/
+#
+# The reference socket harness fitted with the edge/transition trigger: the
+# same eight probed bits, matched on rising and falling terms instead of on a
+# value. The counter's low bits toggle every few cycles, so every edge term has
+# something to fire on.
+name: edge_pkg.edge_capture
+
+communication:
+  mode: axi4_stream
+  clock: la.control
+
+instruments:
+  la: !logic-analyzer
+    storage:
+      buffer_depth_l2: 6
+
+    capture:
+      max_windows: 1
+
+    trigger:
+      capabilities: edge
+
+    domains:
+      control:
+        clock: clock
+        frequency: 100_000_000
+
+        signals:
+          count0: {trigger: true}
+          count1: {trigger: true}
+          count2: {trigger: true}
+          count3: {trigger: true}
+          count4: {trigger: true}
+          count5: {trigger: true}
+          count6: {trigger: true}
+          count7: {trigger: true}

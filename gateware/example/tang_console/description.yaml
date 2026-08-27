@@ -1,0 +1,21 @@
+name: tang_console.gatecap_demo_block
+
+communication:
+  mode: axi4_stream
+
+instruments:
+  panel: !control-status
+    clock: clock
+    tick-counter-width: 8
+
+    control:
+      seven_seg: 8
+
+    status:
+      s2: 1
+
+  clocks: !clock-measurer
+    reference: ext
+    frequency: 50_000_000
+    clocks: [pll]
+    max_rate: 150_000_000

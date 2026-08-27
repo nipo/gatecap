@@ -1,0 +1,64 @@
+name: gatecap_usb2
+
+root:
+  name: top
+  deps:
+    - generated.tang_console
+    - nsl_hwdep.clock
+    - nsl_hwdep.reset
+    - nsl_clocking.async
+    - nsl_clocking.pll
+    - nsl_clocking.distribution
+    - nsl_indication.activity
+    - nsl_usb.usb
+    - nsl_usb.utmi
+    - nsl_usb.fs_phy
+    - nsl_usb.func
+    - nsl_usb.io
+    - nsl_bnoc.axi_adapter
+    - nsl_bnoc.chunked_link
+    - nsl_sipeed.pmod_dtx2
+    - nsl_sipeed.pmod_8xled
+  sources:
+    - file_type: verilog
+      files:
+        - phy/usb2_0_softphy.v
+    - file_type: vhdl
+      files:
+        - phy/softphy.pkg.vhd
+        - phy/gw_usb2_phy.vhd
+        - main.vhd
+    - file_type: gowin-cst
+      files:
+        - constraint/usb2.cst
+#        - constraint/spi_flash.cst
+        - constraint/pll.cst
+        - constraint/done_led.cst
+        - constraint/ready_led.cst
+        - constraint/buttons.cst
+        - constraint/clk.cst
+        - constraint/j6_pmod_double_lvcmos33.cst
+        - constraint/j7_pmod_double_lvcmos33.cst
+        - constraint/clk.cst
+    - file_type: gowin-sdc
+      files:
+        - constraint/clk.sdc
+
+output:
+  - name: synthesis
+    topcell: main
+    target:
+      part: GW5AT-LV60PG484AC1/I0#B
+      use_as_gpio:
+        - sspi
+        - mspi
+        - done
+        - ready
+        - cpu
+    outputs:
+      - type: bitstream
+        path: usb2.fs
+
+repositories:
+  - path: generated/repository.gbs.yaml
+    loader: yaml

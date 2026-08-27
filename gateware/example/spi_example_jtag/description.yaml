@@ -1,0 +1,57 @@
+# Regenerate the VHDL sitting in generated/ with:
+#
+#   cd host && python3.13 -m acrobe gatecap generate \
+#     ../gateware/example/spi_example_jtag/description.yaml \
+#     -o ../gateware/example/spi_example_jtag/generated/
+#
+# A capture core reached over the chip's JTAG TAP rather than over a stream
+# port: the host speaks the JTAG transactor protocol to a simulated ATE, which
+# shifts the continuous-transport data register of the TAP the core sits
+# behind. The probed design is an SPI transactor driving an SPI memory target,
+# so an armed capture cut on a chip-select edge holds a whole transaction --
+# the SPI wires and the command/response frames that produced them.
+#
+# The bench serving this core (tb.vhd) binds two UDP ports: 4249 for the JTAG
+# ATE, reached as
+#
+#   udp/127.0.0.1:4249/nsl_jtag/chain/0/bnoc_continuous_transport/gatecap
+#
+# and 4250 for the SPI transactor, reached as udp/127.0.0.1:4250/nsl_spi/cs0.
+name: spi_probe.spi_jtag_capture
+
+communication:
+  mode: jtag
+  clock: la.spi
+
+instruments:
+  la: !logic-analyzer
+    storage:
+      # 4096 samples at 100 MHz: 40 us, enough for a whole SPI transaction at the
+      # rates the transactor reaches.
+      buffer_depth_l2: 12
+
+    capture:
+      max_windows: 1
+
+    trigger:
+      capabilities: edge
+
+    domains:
+      spi:
+        clock: clock
+        frequency: 100_000_000
+
+        signals:
+          sck: {}
+          # Chip select frames a transaction: its falling edge is the natural
+          # trigger for capturing one.
+          cs_n:
+            trigger: true
+          mosi: {}
+          miso: {}
+
+          # The transactor's framed command and response streams, probed whole:
+          # the bnoc packer lays out data/valid/last/ready and names them.
+          command: !bnoc-framed
+            trigger: vlr
+          response: !bnoc-framed {}

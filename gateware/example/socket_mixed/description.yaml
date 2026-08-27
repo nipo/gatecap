@@ -1,0 +1,81 @@
+# Regenerate the VHDL sitting in generated/ with:
+#
+#   cd host && python3.13 -m acrobe gatecap generate \
+#     ../gateware/example/socket_mixed/description.yaml \
+#     -o ../gateware/example/socket_mixed/generated/
+#
+# A rack of two instruments of different types: a logic analyzer capturing a
+# free-running bench, and a control/status panel on a clock of its own -- so
+# the host enumerates a mixed rack, and drives each instrument through the
+# driver bound to its own envelope type.
+#
+# The panel's clock is unrelated to the one the transport rides, which is what
+# the split shell/core design exists for: every crossing of the inner contract
+# is instantiated here.
+name: mixed_pkg.mixed_rack
+
+communication:
+  mode: axi4_stream
+  clock: la.main
+
+instruments:
+  la: !logic-analyzer
+    storage:
+      buffer_depth_l2: 8
+
+    capture:
+      max_windows: 1
+
+    trigger:
+      capabilities: value
+
+    domains:
+      main:
+        clock: clock
+        frequency: 100_000_000
+
+        signals:
+          state: !bus
+            width: 2
+            trigger: true
+            enum:
+              0: IDLE
+              1: BUSY
+              2: HOLD
+              3: DONE
+          count: !bus
+            width: 8
+
+  panel: !control-status
+    clock: clk
+    tick-counter-width: 8
+
+    control:
+      led: 1
+      level: 12
+      mode:
+        width: 2
+        enum:
+          0: idle
+          1: run
+          2: test
+
+    # Wired back to the controls in the bench, so a host write shows up here.
+    status:
+      led_echo: 1
+      level_echo: 12
+      mode_echo:
+        width: 2
+        enum:
+          0: idle
+          1: run
+          2: test
+
+    tick-out:
+      - [ start, stop ]
+      - [ soft_reset ]
+
+    # Wired back to the tick outputs in the bench, one for one.
+    tick-in:
+      - [ started, stopped ]
+      - [ was_reset ]

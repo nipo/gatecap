@@ -1,0 +1,56 @@
+name: gatecap-example
+description: Gatecap example suite
+
+settings:
+  max_parallel_projects: 4
+  stop_on_failure: false
+
+projects:
+  - name: bus_explorer
+    path: bus_explorer
+    tags: [ghdl, simulation, server]
+  - name: clock_rates
+    path: clock_rates
+    tags: [ghdl, simulation, server]
+  - name: socket
+    path: socket
+    tags: [ghdl, simulation, server]
+  - name: socket_edge
+    path: socket_edge
+    tags: [ghdl, simulation, server]
+  - name: socket_generated
+    path: socket_generated
+    tags: [ghdl, simulation, server]
+  - name: socket_mixed
+    path: socket_mixed
+    tags: [ghdl, simulation, server]
+  - name: socket_packed
+    path: socket_packed
+    tags: [ghdl, simulation, server]
+  - name: socket_rle
+    path: socket_rle
+    tags: [ghdl, simulation, server]
+  - name: socket_spi
+    path: socket_spi
+    tags: [ghdl, simulation, server]
+  - name: socket_wide
+    path: socket_wide
+    tags: [ghdl, simulation, server]
+  - name: spi_example
+    path: spi_example
+    tags: [ghdl, simulation, server]
+  - name: spi_example_jtag
+    path: spi_example_jtag
+    tags: [ghdl, simulation, server]
+  - name: spi_example_rle
+    path: spi_example_rle
+    tags: [ghdl, simulation, server]
+  - name: spi_example_swd
+    path: spi_example_swd
+    tags: [ghdl, simulation, server]
+  - name: usb2_transport
+    path: usb2_transport
+    tags: [gowin, synthesis, demo]
+  - name: swd_transport
+    path: swd_transport
+    tags: [gowin, synthesis, demo]

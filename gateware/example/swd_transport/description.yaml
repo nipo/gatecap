@@ -1,0 +1,38 @@
+name: spi_probe.spi_swd_capture
+
+communication:
+  mode: swd
+  clock: la.spi
+
+instruments:
+  la: !logic-analyzer
+    storage:
+      # 4096 samples at 100 MHz: 40 us, enough for a whole SPI transaction at the
+      # rates the transactor reaches.
+      buffer_depth_l2: 12
+
+    capture:
+      max_windows: 1
+
+    trigger:
+      capabilities: edge
+
+    domains:
+      spi:
+        clock: clock
+        frequency: 60_000_000
+
+        signals:
+          sck: {}
+          # Chip select frames a transaction: its falling edge is the natural
+          # trigger for capturing one.
+          cs_n:
+            trigger: true
+          mosi: {}
+          miso: {}
+
+          # The transactor's framed command and response streams, probed whole:
+          # the bnoc packer lays out data/valid/last/ready and names them.
+          command: !bnoc-framed
+            trigger: vlr
+          response: !bnoc-framed {}

@@ -1,0 +1,69 @@
+# Regenerate the VHDL sitting in generated/ with:
+#
+#   cd host && python3.13 -m acrobe gatecap generate \
+#     ../gateware/example/socket_spi/description.yaml \
+#     -o ../gateware/example/socket_spi/generated/
+#
+# A rack reached over plain SPI: four wires, one transaction per chip-select
+# assertion, and no capability asked of the master. The transport rides the
+# analyzer's capture clock, and that domain states its frequency, so the ratio
+# between the host clock and the highest SCK rate the master may use is checked
+# at elaboration.
+#
+# Two instruments, so the link carries every access shape a host makes: the
+# analyzer's trace readback is a long multi-burst read, and the panel's
+# registers are single words written and read back.
+name: spi_pkg.spi_rack
+
+communication:
+  mode: spi
+  clock: la.main
+  # A tenth of the 100 MHz host clock: the floor the adapter accepts.
+  max_rate: 10_000_000
+
+instruments:
+  la: !logic-analyzer
+    storage:
+      buffer_depth_l2: 8
+
+    capture:
+      max_windows: 1
+
+    trigger:
+      capabilities: value
+
+    domains:
+      main:
+        clock: clock
+        frequency: 100_000_000
+
+        signals:
+          state: !bus
+            width: 2
+            trigger: true
+            enum:
+              0: IDLE
+              1: BUSY
+              2: HOLD
+              3: DONE
+          count: !bus
+            width: 8
+
+  panel: !control-status
+    clock: clock
+    tick-counter-width: 8
+
+    control:
+      led: 1
+      level: 12
+
+    # Wired back to the controls in the bench, so a host write shows up here.
+    status:
+      led_echo: 1
+      level_echo: 12
+
+    tick-out:
+      - [ start ]
+
+    tick-in:
+      - [ started ]

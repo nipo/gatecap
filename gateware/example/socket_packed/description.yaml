@@ -1,0 +1,42 @@
+# Regenerate the VHDL sitting in generated/ with:
+#
+#   cd host && python3.13 -m acrobe gatecap generate \
+#     ../gateware/example/socket_packed/description.yaml \
+#     -o ../gateware/example/socket_packed/generated/
+#
+# The reference socket harness with byte-lane packed storage: the same eight
+# probed bits and the same value/mask trigger, stored several samples per APB
+# word. The descriptor advertises the packed sample stride and the host unpacks,
+# so a captured trace still reads back as consecutive counter values.
+name: packed_pkg.packed_capture
+
+communication:
+  mode: axi4_stream
+  clock: la.control
+
+instruments:
+  la: !logic-analyzer
+    storage:
+      buffer_depth_l2: 6
+      packed: true
+
+    capture:
+      max_windows: 1
+
+    trigger:
+      capabilities: value
+
+    domains:
+      control:
+        clock: clock
+        frequency: 100_000_000
+
+        signals:
+          count0: {trigger: true}
+          count1: {trigger: true}
+          count2: {trigger: true}
+          count3: {trigger: true}
+          count4: {trigger: true}
+          count5: {trigger: true}
+          count6: {trigger: true}
+          count7: {trigger: true}

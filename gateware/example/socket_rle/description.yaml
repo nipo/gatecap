@@ -1,0 +1,41 @@
+# Regenerate the VHDL sitting in generated/ with:
+#
+#   cd host && python3.13 -m acrobe gatecap generate \
+#     ../gateware/example/socket_rle/description.yaml \
+#     -o ../gateware/example/socket_rle/generated/
+#
+# Run-length-encoded storage behind the socket harness: eight probed bits
+# stored one line per change, so the long stable runs of a slow counter collapse
+# to a couple of lines and a window spans far more cycles than its depth.
+name: rle_pkg.rle_capture
+
+communication:
+  mode: axi4_stream
+  clock: la.control
+
+instruments:
+  la: !logic-analyzer
+    storage:
+      buffer_depth_l2: 10
+      rle: true
+
+    capture:
+      max_windows: 1
+
+    trigger:
+      capabilities: value
+
+    domains:
+      control:
+        clock: clock
+        frequency: 100_000_000
+
+        signals:
+          b0: {trigger: true}
+          b1: {trigger: true}
+          b2: {trigger: true}
+          b3: {trigger: true}
+          b4: {trigger: true}
+          b5: {trigger: true}
+          b6: {trigger: true}
+          b7: {trigger: true}

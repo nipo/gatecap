@@ -1,0 +1,53 @@
+# Regenerate the VHDL sitting in generated/ with:
+#
+#   cd host && python3.13 -m acrobe gatecap generate \
+#     ../gateware/example/spi_example_rle/description.yaml \
+#     -o ../gateware/example/spi_example_rle/generated/
+#
+# The same SPI probe as spi_example, stored run-length encoded: each idle
+# stretch between transactions costs about one line, so several transactions
+# with their gaps fit in a window that a raw capture could never hold.
+#
+# The bench serving this core (tb.vhd) binds UDP 4245 for the capture link and
+# 4246 for the framed SPI transactor commands.
+name: spi_probe.spi_rle_capture
+
+communication:
+  mode: axi4_stream
+  clock: la.spi
+
+instruments:
+  la: !logic-analyzer
+    storage:
+      # 4096 RLE lines: enough for several SPI transactions and the idle
+      # stretches between them.
+      buffer_depth_l2: 12
+      rle: true
+
+    trigger:
+      capabilities: value
+
+    domains:
+      spi:
+        clock: clock
+        frequency: 100_000_000
+
+        signals:
+          sck:
+            trigger: true
+          cs_n:
+            trigger: true
+          mosi:
+            trigger: true
+          miso:
+            trigger: true
+
+          # The transactor's framed command and response streams, probed
+          # whole, valid/ready/last/data in that order. The trigger watches the
+          # same fields.
+          command: !bnoc-framed
+            trace: vrld
+            trigger: vrld
+          response: !bnoc-framed
+            trace: vrld
+            trigger: vrld

@@ -1,0 +1,59 @@
+# Regenerate the VHDL sitting in generated/ with:
+#
+#   cd host && python3.13 -m acrobe gatecap generate \
+#     ../gateware/example/socket_generated/description.yaml \
+#     -o ../gateware/example/socket_generated/generated/
+#
+# Two capture domains on unrelated clocks correlated by one trigger: the phy
+# capture subscribes to the control domain's trigger, so both buffers are cut
+# on the same event and the subscriber back-dates by its crossing depth. The
+# host transport rides the control clock; the probed command bus takes its
+# stream configuration from a generic, so the vector geometry and the probe
+# names are resolved at elaboration.
+name: link_pkg.link_capture
+
+communication:
+  mode: axi4_stream
+  clock: la.control
+
+instruments:
+  la: !logic-analyzer
+    storage:
+      buffer_depth_l2: 8
+
+    capture:
+      max_windows: 1
+
+    trigger:
+      capabilities: value
+
+    domains:
+      control:
+        clock: clock
+        frequency: 100_000_000
+
+        signals:
+          command: !axi4-stream
+            trace: dvlr
+            trigger: vl
+          state: !bus
+            width: 2
+            trigger: true
+            enum:
+              0: IDLE
+              1: BUSY
+              2: HOLD
+              3: DONE
+          count: !bus
+            width: 8
+
+      phy:
+        clock: clock
+        frequency: 125_000_000
+        trigger:
+          from: control
+
+        signals:
+          word: !bus
+            width: 8
+          mark: {}
