@@ -1,0 +1,30 @@
+name: adapter_serial_hdlc
+
+root:
+  name: top
+  deps:
+    - gatecap.adapter_serial_hdlc
+    - gatecap.testing
+    - nsl_amba.apb
+    - nsl_amba.ram
+    - nsl_bnoc.framed
+    - nsl_bnoc.pipe
+    - nsl_bnoc.testing
+    - nsl_data.bytestream
+    - nsl_line_coding.hdlc
+    - nsl_math.arith
+    - nsl_simulation.driver
+    - nsl_simulation.logging
+    - nsl_uart.flow_control
+    - nsl_uart.transactor
+  sources:
+    - file_type: vhdl
+      files:
+        - tb.vhd
+
+output:
+  - name: simulation
+    topcell: tb
+    outputs:
+      - type: simulation-log
+        path: tb.log

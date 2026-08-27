@@ -1,0 +1,17 @@
+sources:
+  - file_type: vhdl
+    files:
+      - adapter_serial_hdlc.pkg.vhd
+      - serial_hdlc_adapter.vhd
+deps:
+  - nsl_amba.apb
+  - nsl_amba.axi4_stream
+  - nsl_bnoc.axi_adapter
+  - nsl_bnoc.framed
+  - nsl_bnoc.pipe
+  - nsl_line_coding.hdlc
+  - nsl_math.arith
+  - nsl_synthesis.assertion
+  - nsl_uart.flow_control
+  - nsl_uart.transactor
+  - gatecap.adapter_stream
