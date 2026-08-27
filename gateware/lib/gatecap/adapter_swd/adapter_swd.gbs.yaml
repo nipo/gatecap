@@ -1,0 +1,14 @@
+sources:
+  - file_type: vhdl
+    files:
+      - adapter_swd.pkg.vhd
+      - swd_adapter.vhd
+deps:
+  - nsl_amba.apb
+  - nsl_amba.axi_apb
+  - nsl_amba.axi4_mm
+  - nsl_coresight.ap
+  - nsl_coresight.dapbus
+  - nsl_coresight.dp
+  - nsl_coresight.swd
+  - nsl_synthesis.assertion

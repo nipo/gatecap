@@ -1,0 +1,28 @@
+name: adapter_swd
+
+root:
+  name: top
+  deps:
+    - gatecap.adapter_swd
+    - gatecap.testing
+    - nsl_amba.apb
+    - nsl_amba.ram
+    - nsl_bnoc.framed
+    - nsl_bnoc.testing
+    - nsl_coresight.memap_mapper
+    - nsl_coresight.swd
+    - nsl_coresight.testing
+    - nsl_coresight.transactor
+    - nsl_data.bytestream
+    - nsl_simulation.driver
+  sources:
+    - file_type: vhdl
+      files:
+        - tb.vhd
+
+output:
+  - name: simulation
+    topcell: tb
+    outputs:
+      - type: simulation-log
+        path: tb.log
