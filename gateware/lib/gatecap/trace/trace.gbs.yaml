@@ -1,0 +1,11 @@
+sources:
+  - file_type: vhdl
+    files:
+      - trace.pkg.vhd
+      - trace_buffer.vhd
+      - trace_buffer_packed.vhd
+deps:
+  - nsl_amba.apb
+  - nsl_memory.ram
+  - nsl_data.bytestream
+  - nsl_data.endian
