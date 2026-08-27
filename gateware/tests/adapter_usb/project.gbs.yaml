@@ -1,0 +1,27 @@
+name: adapter_usb
+
+root:
+  name: top
+  deps:
+    - gatecap.adapter_usb
+    - gatecap.testing
+    - nsl_amba.apb
+    - nsl_amba.ram
+    - nsl_clocking.async
+    - nsl_data.bytestream
+    - nsl_data.crc
+    - nsl_data.text
+    - nsl_usb.descriptor
+    - nsl_usb.testing
+    - nsl_usb.usb
+  sources:
+    - file_type: vhdl
+      files:
+        - tb.vhd
+
+output:
+  - name: simulation
+    topcell: tb
+    outputs:
+      - type: simulation-log
+        path: tb.log
