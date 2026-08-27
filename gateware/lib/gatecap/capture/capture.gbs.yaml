@@ -1,0 +1,8 @@
+sources:
+  - file_type: vhdl
+    files:
+      - capture.pkg.vhd
+      - capture_core.vhd
+      - capture_core_rle.vhd
+deps:
+  - nsl_logic.bool
