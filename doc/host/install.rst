@@ -53,10 +53,25 @@ Graphical interface
 -------------------
 
 The GUI needs ``pywebview`` for its window (``acrobe gatecap serve``, which
-leaves the browser to you, does not), and it embeds the `Surfer
+leaves the browser to you, does not). ``pywebview`` rides the operating
+system's webview, so the pip package alone is not always enough:
+
+* macOS — ``pip install pywebview`` suffices (WKWebView through pyobjc,
+  pulled in automatically).
+* Windows — ``pip install pywebview`` plus the WebView2 Runtime
+  (preinstalled on Windows 11; otherwise Microsoft's "Evergreen" installer).
+* Linux, GTK — ``pip install pywebview`` plus the system packages; on
+  Debian/Ubuntu ``python3-gi gir1.2-gtk-3.0 gir1.2-webkit2-4.1`` (or
+  ``-4.0``).
+* Linux, Qt — ``pip install "pywebview[qt]"`` (PyQt5 + PyQtWebEngine)
+  instead of the GTK packages.
+
+The GUI embeds the `Surfer
 <https://surfer-project.org/>`_ waveform viewer as a WebAssembly build. Those
 viewer assets are looked up on disk first; when they are missing, the first
 GUI start downloads Surfer's official prebuilt web build and caches it next
 to the package. Point ``GATECAP_SURFER_ASSETS`` at a directory holding that
 build to use your own copy and skip the download entirely — useful on a
-machine with no outbound network access.
+machine with no outbound network access. The Surfer VS Code extension
+bundles such a build in its ``surfer/`` folder
+(``~/.vscode/extensions/surfer-project.surfer-*/surfer/``).

@@ -1,9 +1,9 @@
 """Ensure Surfer's prebuilt web (WASM) assets are available for embedding.
 
-Prefers assets already on disk (this package, a $GATECAP_SURFER_ASSETS
-override, or the Phase 0 spike's download); only if none are found does it
-download the official Surfer VS Code extension (a .vsix, i.e. a zip) from the
-VS Marketplace and extract its bundled `surfer/` web build. No Rust build.
+Prefers assets already on disk (this package, or a $GATECAP_SURFER_ASSETS
+override); only if none are found does it download the official Surfer VS
+Code extension (a .vsix, i.e. a zip) from the VS Marketplace and extract its
+bundled `surfer/` web build. No Rust build.
 """
 
 from __future__ import annotations
@@ -17,8 +17,6 @@ import zipfile
 from pathlib import Path
 
 ASSETS_DIR = Path(__file__).resolve().parent / "surfer_assets"
-# host/ = .../gui/../../../.. ; the Phase 0 spike fetches assets here too.
-PHASE0_DIR = Path(__file__).resolve().parents[3] / "gui_phase0" / "surfer_assets"
 
 EXTENSION = "surfer-project.surfer"
 QUERY_URL = "https://marketplace.visualstudio.com/_apis/public/gallery/extensionquery"
@@ -35,7 +33,6 @@ def _candidates(dest):
     env = os.environ.get("GATECAP_SURFER_ASSETS")
     if env:
         yield Path(env)
-    yield PHASE0_DIR
 
 
 def _latest_vsix_url():
@@ -83,7 +80,7 @@ def ensure(dest=ASSETS_DIR):
             f"Surfer web assets are missing and could not be downloaded ({e}).\n"
             f"Provide them without a network: copy a Surfer web build (index.html "
             f"+ *.wasm + *.js) into {dest}, or point $GATECAP_SURFER_ASSETS at an "
-            f"existing one (e.g. the Phase 0 spike's {PHASE0_DIR}).") from e
+            f"existing one.") from e
     if not _valid(dest):
         raise RuntimeError(f"downloaded assets look incomplete in {dest}")
     return dest

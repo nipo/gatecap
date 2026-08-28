@@ -414,8 +414,8 @@ def set_app_name(name):
 
 def main(root=None):
     if webview is None:
-        sys.exit("pywebview is not installed (see host/gui_phase0/README.md for "
-                 "the per-OS backend).")
+        sys.exit("pywebview is not installed (see the manual's host install "
+                 "page for the per-OS backend).")
     set_app_name("gatecap")   # menu bar; before any NSApplication is created
     # Off by default in pywebview, which then swallows a download link's
     # click; on, the click opens the platform save dialog.
