@@ -7,7 +7,8 @@ library gatecap, nsl_amba, nsl_simulation;
 -- this bench models. The transport's stream types are named in full, the two
 -- packages having a config_t, a master_t and a slave_t apiece.
 use nsl_amba.apb.all;
-use work.busx_pkg.all;
+library gatecap_generated;
+use gatecap_generated.busx_pkg.all;
 
 -- UDP harness for an instrument-only rack whose one instrument is a bus
 -- explorer: a UDP socket gateway in front of the rack, and a stub device

@@ -10,23 +10,9 @@ adapter enumeration the drain exists to clean up.
 """
 
 import asyncio
-import os
-import subprocess
 import sys
 
 import pytest
-
-
-def pytest_sessionstart(session):
-    """Regenerate every rack in the gateware tree. Generated cores are
-    not committed, and the socket fixtures gbs-build benches that carry
-    them."""
-    regenerate = os.path.join(os.path.dirname(os.path.dirname(
-        os.path.dirname(os.path.abspath(__file__)))), "gateware", "regenerate")
-    result = subprocess.run([regenerate], capture_output=True, text=True)
-    if result.returncode != 0:
-        raise RuntimeError(f"gateware/regenerate failed:\n"
-                           f"{result.stdout}{result.stderr}")
 
 
 @pytest.fixture(scope="session", autouse=True)

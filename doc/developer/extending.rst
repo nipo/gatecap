@@ -599,7 +599,8 @@ The generator (:doc:`../usage/description`) resolves the type-specific parts of
 a description through three registries in
 ``acrobe_plugin.gatecap.generator``, and all of them accept third-party
 entries at import time — register from your plugin's ``__init__`` chain and
-every ``acrobe gatecap generate`` run sees them.
+every rack generation sees them, whether it runs inside a gbs build or from
+``acrobe gatecap generate``.
 
 Signal types, keyed by YAML tag
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -944,7 +945,7 @@ levels, each a small manifest:
 The repository defines library ``myext``; anything may then depend on the
 partition key ``myext.monitor``, and that key is exactly what your
 signal-type plugin's ``deps()`` returns, so a generated core that uses your
-type emits a manifest pulling your gateware in by name.
+type pulls your gateware in by name, with no entry in the user's project.
 
 For the key to resolve, the repository must be listed in the gbs
 configuration. Two places work, and they merge:
@@ -967,8 +968,10 @@ state this one entry; it is the only per-user step the gateware side needs.
 
 gbs also has a plugin namespace of its own — ``gbs.plugin.*`` packages
 exposing a ``gbs_register()`` — but that mechanism contributes *tools*:
-synthesis backends, repository loaders, toolchain discovery. Shipping VHDL
-sources needs no gbs plugin, only the repository entry above.
+synthesis backends, repository loaders, toolchain discovery. That is where
+gatecap's ``gatecap-description`` loader comes from (:doc:`../usage/build`).
+Shipping VHDL sources needs no gbs plugin of your own, only the repository
+entry above.
 
 Checklist
 ---------

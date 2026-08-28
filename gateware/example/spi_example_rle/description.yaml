@@ -1,8 +1,5 @@
-# Regenerate the VHDL sitting in generated/ with:
-#
-#   cd host && python3.13 -m acrobe gatecap generate \
-#     ../gateware/example/spi_example_rle/description.yaml \
-#     -o ../gateware/example/spi_example_rle/generated/
+# The build generates the rack from this description; the emitted units are
+# analysed into the gatecap_generated library.
 #
 # The same SPI probe as spi_example, stored run-length encoded: each idle
 # stretch between transactions costs about one line, so several transactions

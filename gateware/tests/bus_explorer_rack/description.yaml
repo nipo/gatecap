@@ -1,8 +1,4 @@
-# Regenerate the VHDL sitting next to this file with:
-#
-#   cd host && python3.13 -m acrobe gatecap generate \
-#     ../gateware/tests/bus_explorer_rack/description.yaml \
-#     -o ../gateware/tests/bus_explorer_rack/generated/
+# The build generates the rack's VHDL from this description.
 #
 # One bus explorer behind the plain APB completer, mastering a narrow target
 # bus on a clock of its own: 10 address bits, 16 data bits, four scan slots.

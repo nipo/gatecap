@@ -1,38 +1,25 @@
 name: control_status
 
+# The rack's description is a repository of its own: it stands for the
+# library the generated units are analysed into.
+repositories:
+  - path: description.yaml
+    loader: gatecap-description
+
 root:
   name: top
   deps:
-    - gatecap.adapter_stream
-    - gatecap.axi4_stream_packer
-    - gatecap.capture
-    - gatecap.control
-    - gatecap.control_status
-    - gatecap.descriptor
-    - gatecap.trace
-    - nsl_amba.address
-    - nsl_amba.apb
-    - nsl_amba.apb_routing
+    # The rack, and what the testbench itself uses.
+    - gatecap_generated.cs
     - nsl_amba.axi4_stream
-    - nsl_amba.rom
-    - nsl_amba.stream_apb
-    - nsl_amba.stream_fifo
     - nsl_amba.stream_to_udp
-    - nsl_clocking.interdomain
     - nsl_data.bytestream
     - nsl_data.prbs
-    - nsl_math.arith
-    - nsl_math.int_ext
-    - nsl_memory.rom
     - nsl_simulation.driver
-    - nsl_synthesis.assertion
+    - nsl_simulation.logging
   sources:
     - file_type: vhdl
       files:
-        - generated/cs.pkg.vhd
-        - generated/demo_backplane.vhd
-        - generated/demo_panel.vhd
-        - generated/demo.vhd
         - tb.vhd
 
 output:

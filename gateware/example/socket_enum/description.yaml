@@ -1,8 +1,5 @@
-# Regenerate the VHDL sitting in generated/ with:
-#
-#   cd host && python3.13 -m acrobe gatecap generate \
-#     ../gateware/example/socket_enum/description.yaml \
-#     -o ../gateware/example/socket_enum/generated/
+# The build generates the rack from this description; the emitted units are
+# analysed into the gatecap_generated library.
 #
 # The eight counter bits advertised as one bus carrying an enumeration: values
 # 0..2 come from the well-known demo.phase table, 3..5 are the description's own

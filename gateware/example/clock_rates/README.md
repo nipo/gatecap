@@ -8,14 +8,11 @@ AXI4-Stream.
 
 ## Building
 
+The rack's VHDL is generated from `description.yaml` as part of the
+build; nothing has to be produced beforehand.
+
 Build and run the simulator:
 
-    $ acrobe gatecap generate description.yaml -o generated
-    description.yaml: rack clkrate_pkg.clkrate_core, 1 instrument(s) over axi4_stream
-    wrote generated/clkrate_pkg.pkg.vhd
-    wrote generated/clkrate_core_backplane.vhd
-    wrote generated/clkrate_core.vhd
-    wrote generated/clkrate_pkg.gbs.yaml
     $ gbs project build
     $ ./tb --ieee-asserts=disable
 

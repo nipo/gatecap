@@ -4,7 +4,9 @@ use ieee.numeric_std.all;
 
 library nsl_amba;
 use nsl_amba.apb.all;
-use work.gen_pkg.all;
+
+library gatecap_generated;
+use gatecap_generated.gen_pkg.all;
 
 -- A generated single-domain core over APB, every capture-domain clock being the
 -- host clock: descriptor header, fingerprint stability, idle/armed/triggered

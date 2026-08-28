@@ -5,7 +5,8 @@ use ieee.numeric_std.all;
 library nsl_amba, nsl_bnoc, nsl_spi, nsl_io, nsl_memory, nsl_data;
 use nsl_amba.axi4_stream.all;
 use nsl_data.bytestream.all;
-use work.spi_probe.all;
+library gatecap_generated;
+use gatecap_generated.spi_probe.all;
 
 -- The spi_example platform with run-length-encoded storage: each idle stretch
 -- between transactions costs about one line, so several transactions and the

@@ -8,15 +8,11 @@ AXI4-Stream.
 
 ## Building
 
+The rack's VHDL is generated from `description.yaml` as part of the
+build; nothing has to be produced beforehand.
+
 Build and run the simulator:
 
-    $ acrobe gatecap generate description.yaml -o generated
-    description.yaml: rack busx_pkg.busx_core, 1 instrument(s) over axi4_stream
-    wrote generated/busx_core_dut.vhd
-    wrote generated/busx_pkg.pkg.vhd
-    wrote generated/busx_core_backplane.vhd
-    wrote generated/busx_core.vhd
-    wrote generated/busx_pkg.gbs.yaml
     $ gbs project build
     $ ./tb --ieee-asserts=disable
 

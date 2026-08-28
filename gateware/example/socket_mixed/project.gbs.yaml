@@ -1,35 +1,21 @@
 name: socket_mixed
 
+# The rack's description is a repository of its own: it stands for the
+# library the generated units are analysed into.
+repositories:
+  - path: description.yaml
+    loader: gatecap-description
+
 root:
   name: top
   deps:
-    - gatecap.adapter_stream
-    - gatecap.capture
-    - gatecap.control
-    - gatecap.control_status
-    - gatecap.descriptor
-    - gatecap.trace
-    - nsl_amba.address
-    - nsl_amba.apb
-    - nsl_amba.apb_routing
+    # The rack, and what the testbench itself uses.
+    - gatecap_generated.mixed_pkg
     - nsl_amba.axi4_stream
-    - nsl_amba.rom
-    - nsl_amba.stream_apb
     - nsl_amba.stream_to_udp
-    - nsl_clocking.interdomain
-    - nsl_data.bytestream
-    - nsl_math.arith
-    - nsl_math.int_ext
-    - nsl_memory.rom
-    - nsl_synthesis.assertion
   sources:
     - file_type: vhdl
       files:
-        - generated/mixed_rack_la.vhd
-        - generated/mixed_rack_panel.vhd
-        - generated/mixed_pkg.pkg.vhd
-        - generated/mixed_rack_backplane.vhd
-        - generated/mixed_rack.vhd
         - tb.vhd
 
 output:

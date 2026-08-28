@@ -1,8 +1,4 @@
-# Regenerate the VHDL sitting next to this file with:
-#
-#   cd host && python3.13 -m acrobe gatecap generate \
-#     ../gateware/tests/control_status_rack/description.yaml \
-#     -o ../gateware/tests/control_status_rack/generated/
+# The build generates the rack's VHDL from this description.
 #
 # Two control/status panels behind the plain APB completer. "panel" runs on a
 # clock of its own, so every crossing of the inner contract is instantiated;

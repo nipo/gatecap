@@ -4,17 +4,18 @@ Instantiating the rack
 The component
 -------------
 
-The rack is the entity the generator wrote out from description file
+The rack is the entity generated from the description file
 (:doc:`description`), and its component declaration is in the
 generated package, so a selected name — or a ``use`` clause on that
-package — is all the declaration needed.
+package — is all the declaration needed. The package lives in library
+``gatecap_generated`` (:doc:`build`).
 
 For instance the following declaration:
 
 .. code-block:: yaml
 
-   name: rack_partition.demo_rack
-   
+   name: demo_pkg.demo_rack
+
    communication:
      mode: axi4_stream
    
@@ -40,11 +41,11 @@ can be instantiated as:
 
 .. code-block:: vhdl
 
-   library custom_lib;
+   library gatecap_generated;
 
    ...
 
-   capture: custom_lib.rack_partition.demo_rack
+   capture: gatecap_generated.demo_pkg.demo_rack
      generic map(
        stream_config_c => nsl_bnoc.axi_adapter.axi4_stream_framed_config_c,
        burst_length_l2_c => 6

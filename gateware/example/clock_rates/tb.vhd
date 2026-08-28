@@ -4,7 +4,8 @@ use ieee.numeric_std.all;
 
 library nsl_amba, nsl_simulation;
 use nsl_amba.axi4_stream.all;
-use work.clkrate_pkg.all;
+library gatecap_generated;
+use gatecap_generated.clkrate_pkg.all;
 
 -- UDP harness for an instrument-only rack: a UDP socket gateway in front of a
 -- generated rack whose only instrument is a clock measurer. Driven externally

@@ -1,8 +1,5 @@
-# Regenerate the VHDL sitting in generated/ with:
-#
-#   cd host && python3.13 -m acrobe gatecap generate \
-#     ../gateware/example/clock_rates/description.yaml \
-#     -o ../gateware/example/clock_rates/generated/
+# The build generates the rack from this description; the emitted units are
+# analysed into the gatecap_generated library.
 #
 # An instrument-only rack: nothing captured, one clock measurer and the
 # transport that reaches it. With no capture domain to borrow a clock from,

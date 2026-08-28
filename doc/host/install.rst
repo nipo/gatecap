@@ -13,6 +13,11 @@ The plugin pulls in ``cbor2`` (to read the core's self-description) and
 ``pyvcd`` (to write waveforms). The graphical interface additionally needs
 ``pywebview``.
 
+The same distribution also installs a `gbs <https://github.com/nipo/gbs>`_
+plugin, which is what lets a build generate a rack straight from its
+description (:doc:`../usage/build`). It is installed unconditionally: without
+gbs, nothing imports it.
+
 Installing
 ----------
 

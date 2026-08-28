@@ -3,6 +3,7 @@ use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 
 library nsl_data, nsl_simulation, nsl_amba;
+library gatecap_generated;
 use nsl_data.bytestream.all;
 use nsl_data.prbs.all;
 use nsl_amba.axi4_stream.all;
@@ -204,7 +205,7 @@ begin
         rx_i => rx_s.s
         );
 
-    inst: work.multidomain.multidomain_capture
+    inst: gatecap_generated.multidomain.multidomain_capture
       generic map(
         stream_config_c => stream_cfg_c,
         burst_length_l2_c => 6,

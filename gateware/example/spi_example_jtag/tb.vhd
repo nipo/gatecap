@@ -6,7 +6,8 @@ library nsl_amba, nsl_bnoc, nsl_jtag, nsl_simulation, nsl_spi, nsl_io,
   nsl_memory, nsl_data;
 use nsl_amba.axi4_stream.all;
 use nsl_data.bytestream.all;
-use work.spi_probe.all;
+library gatecap_generated;
+use gatecap_generated.spi_probe.all;
 
 -- A generated capture core reached over JTAG, probing an SPI link.
 --

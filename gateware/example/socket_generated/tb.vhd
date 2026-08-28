@@ -4,7 +4,8 @@ use ieee.numeric_std.all;
 
 library nsl_amba;
 use nsl_amba.axi4_stream.all;
-use work.link_pkg.all;
+library gatecap_generated;
+use gatecap_generated.link_pkg.all;
 
 -- UDP harness for a generated two-domain core whose single trigger correlates
 -- both captures. The control domain runs at 100 MHz and carries a probed

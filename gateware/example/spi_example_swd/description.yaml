@@ -1,8 +1,5 @@
-# Regenerate the VHDL sitting in generated/ with:
-#
-#   cd host && python3.13 -m acrobe gatecap generate \
-#     ../gateware/example/spi_example_swd/description.yaml \
-#     -o ../gateware/example/spi_example_swd/generated/
+# The build generates the rack from this description; the emitted units are
+# analysed into the gatecap_generated library.
 #
 # A capture core reached over SWD: the core carries its own debug port, so a
 # stock two-wire debug probe is the whole host-side interface. The probed

@@ -4,7 +4,8 @@ use ieee.numeric_std.all;
 
 library nsl_amba;
 use nsl_amba.axi4_stream.all;
-use work.packed_pkg.all;
+library gatecap_generated;
+use gatecap_generated.packed_pkg.all;
 
 -- Simulation harness: the socket bench with byte-lane packed storage. The
 -- descriptor advertises the packed sample stride and the host unpacks; a

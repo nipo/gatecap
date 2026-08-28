@@ -4,7 +4,8 @@ use ieee.numeric_std.all;
 
 library nsl_amba;
 use nsl_amba.axi4_stream.all;
-use work.rle_pkg.all;
+library gatecap_generated;
+use gatecap_generated.rle_pkg.all;
 
 -- Simulation harness for run-length-encoded capture: a UDP gateway in front of
 -- a generated rack whose storage is RLE. The probed signal is a counter that

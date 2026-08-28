@@ -4,7 +4,8 @@ use ieee.numeric_std.all;
 
 library nsl_amba;
 use nsl_amba.axi4_stream.all;
-use work.mixed_pkg.all;
+library gatecap_generated;
+use gatecap_generated.mixed_pkg.all;
 
 -- UDP harness for a generated rack holding two instruments of different
 -- types: a logic analyzer over a free-running bench on the transport's own

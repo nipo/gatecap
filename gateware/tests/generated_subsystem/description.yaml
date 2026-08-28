@@ -1,8 +1,4 @@
-# Regenerate the VHDL sitting next to this file with:
-#
-#   cd host && python3.13 -m acrobe gatecap generate \
-#     ../gateware/tests/generated_subsystem/description.yaml \
-#     -o ../gateware/tests/generated_subsystem/generated/
+# The build generates the rack's VHDL from this description.
 #
 # One capture domain on the host clock, eight probed bits feeding both the
 # capture vector and a value/mask trigger, reached through the plain APB

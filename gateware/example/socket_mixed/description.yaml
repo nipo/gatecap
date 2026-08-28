@@ -1,8 +1,5 @@
-# Regenerate the VHDL sitting in generated/ with:
-#
-#   cd host && python3.13 -m acrobe gatecap generate \
-#     ../gateware/example/socket_mixed/description.yaml \
-#     -o ../gateware/example/socket_mixed/generated/
+# The build generates the rack from this description; the emitted units are
+# analysed into the gatecap_generated library.
 #
 # A rack of two instruments of different types: a logic analyzer capturing a
 # free-running bench, and a control/status panel on a clock of its own -- so

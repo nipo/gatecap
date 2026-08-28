@@ -6,7 +6,9 @@ library nsl_amba, nsl_data, gatecap;
 use nsl_amba.apb.all;
 use nsl_data.text.all;
 use gatecap.bus_explorer.all;
-use work.explorer_pkg.all;
+
+library gatecap_generated;
+use gatecap_generated.explorer_pkg.all;
 
 -- A generated rack of one bus explorer, driven over its plain APB completer.
 -- The explorer masters a 10-bit-address, 16-bit-data target bus on a clock of

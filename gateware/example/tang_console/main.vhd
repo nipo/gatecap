@@ -2,7 +2,8 @@ library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 
-library nsl_usb, nsl_memory, nsl_clocking, nsl_hwdep, nsl_bnoc, nsl_io, nsl_indication, nsl_amba, generated, nsl_digilent, nsl_sipeed;
+library nsl_usb, nsl_clocking, nsl_hwdep, nsl_bnoc, nsl_io, nsl_indication, nsl_amba, nsl_sipeed;
+library gatecap_generated;
 
 entity main is
   port (
@@ -195,7 +196,7 @@ begin
         framed_i => gatecap_framed_s.rsp.ack
         );
 
-    capture: generated.tang_console.gatecap_demo_block
+    capture: gatecap_generated.tang_console.gatecap_demo_block
       generic map(
         stream_config_c => nsl_bnoc.axi_adapter.axi4_stream_framed_config_c,
         burst_length_l2_c => 10

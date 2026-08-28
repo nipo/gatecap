@@ -1,8 +1,5 @@
-# Regenerate the VHDL sitting in generated/ with:
-#
-#   cd host && python3.13 -m acrobe gatecap generate \
-#     ../gateware/example/socket_wide/description.yaml \
-#     -o ../gateware/example/socket_wide/generated/
+# The build generates the rack from this description; the emitted units are
+# analysed into the gatecap_generated library.
 #
 # A capture wider than one APB word: 48 traced bits, so the trace buffer
 # stores 48-bit lines and the host reads two words per sample. The trigger stays

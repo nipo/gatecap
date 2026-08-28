@@ -1,30 +1,24 @@
 name: bus_explorer
 
+# The rack's description is a repository of its own: it stands for the
+# library the generated units are analysed into.
+repositories:
+  - path: description.yaml
+    loader: gatecap-description
+
 root:
   name: top
   deps:
-    - gatecap.adapter_stream
+    # The rack, and what the testbench itself uses.
+    - gatecap_generated.busx_pkg
     - gatecap.bus_explorer
-    - gatecap.descriptor
-    - nsl_amba.address
     - nsl_amba.apb
-    - nsl_amba.apb_routing
     - nsl_amba.axi4_stream
-    - nsl_amba.rom
     - nsl_amba.stream_to_udp
-    - nsl_clocking.interdomain
-    - nsl_data.bytestream
-    - nsl_math.arith
-    - nsl_memory.rom
     - nsl_simulation.driver
-    - nsl_synthesis.assertion
   sources:
     - file_type: vhdl
       files:
-        - generated/busx_core_dut.vhd
-        - generated/busx_pkg.pkg.vhd
-        - generated/busx_core_backplane.vhd
-        - generated/busx_core.vhd
         - tb.vhd
 
 output:

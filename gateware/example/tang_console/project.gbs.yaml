@@ -1,24 +1,30 @@
 name: gatecap_usb2
 
+# The rack's description is a repository of its own: it stands for the
+# library the generated units are analysed into.
+repositories:
+  - path: description.yaml
+    loader: gatecap-description
+
 root:
   name: top
   deps:
-    - generated.tang_console
-    - nsl_hwdep.clock
-    - nsl_hwdep.reset
-    - nsl_clocking.async
-    - nsl_clocking.pll
-    - nsl_clocking.distribution
-    - nsl_indication.activity
-    - nsl_usb.usb
-    - nsl_usb.utmi
-    - nsl_usb.fs_phy
-    - nsl_usb.func
-    - nsl_usb.io
+    # The rack, and what the top level and the phy wrapper themselves use.
+    - gatecap_generated.tang_console
+    - nsl_amba.axi4_stream
     - nsl_bnoc.axi_adapter
     - nsl_bnoc.chunked_link
+    - nsl_bnoc.framed
+    - nsl_bnoc.pipe
+    - nsl_clocking.pll
+    - nsl_hwdep.clock
+    - nsl_indication.activity
+    - nsl_io.io
     - nsl_sipeed.pmod_dtx2
-    - nsl_sipeed.pmod_8xled
+    - nsl_usb.func
+    - nsl_usb.io
+    - nsl_usb.usb
+    - nsl_usb.utmi
   sources:
     - file_type: verilog
       files:
@@ -58,7 +64,3 @@ output:
     outputs:
       - type: bitstream
         path: usb2.fs
-
-repositories:
-  - path: generated/repository.gbs.yaml
-    loader: yaml

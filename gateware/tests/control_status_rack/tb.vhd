@@ -4,7 +4,9 @@ use ieee.numeric_std.all;
 
 library nsl_amba;
 use nsl_amba.apb.all;
-use work.panel_pkg.all;
+
+library gatecap_generated;
+use gatecap_generated.panel_pkg.all;
 
 -- A generated rack of two control/status panels, driven over its plain APB
 -- completer. "panel" runs on a clock of its own, so every read and write goes

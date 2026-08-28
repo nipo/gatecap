@@ -1,8 +1,5 @@
-# Regenerate the VHDL sitting in generated/ with:
-#
-#   cd host && python3.13 -m acrobe gatecap generate \
-#     ../gateware/example/spi_example/description.yaml \
-#     -o ../gateware/example/spi_example/generated/
+# The build generates the rack from this description; the emitted units are
+# analysed into the gatecap_generated library.
 #
 # A capture core reached over a stream port, probing an SPI link: the SPI wires
 # and the whole command/response framed buses of the transactor that drives

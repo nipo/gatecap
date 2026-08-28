@@ -4,7 +4,8 @@ use ieee.numeric_std.all;
 
 library nsl_amba;
 use nsl_amba.axi4_stream.all;
-use work.wide_pkg.all;
+library gatecap_generated;
+use gatecap_generated.wide_pkg.all;
 
 -- Wide capture: 48 traced bits, so a sample spans two 32-bit APB words. The
 -- trace buffer stores 48-bit lines and the read side muxes the words; the host

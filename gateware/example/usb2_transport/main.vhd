@@ -2,7 +2,8 @@ library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 
-library nsl_usb, nsl_memory, nsl_clocking, nsl_hwdep, nsl_bnoc, nsl_spi, nsl_io, nsl_indication, nsl_amba, gatecap;
+library nsl_usb, nsl_clocking, nsl_hwdep, nsl_bnoc, nsl_spi, nsl_io, nsl_indication, nsl_amba;
+library gatecap_generated;
 
 entity main is
   port (
@@ -297,7 +298,7 @@ begin
         framed_i => gatecap_framed_s.rsp.ack
         );
 
-    capture: work.spi_probe.spi_usb2_capture
+    capture: gatecap_generated.spi_probe.spi_usb2_capture
       generic map(
         stream_config_c => cfg_c,
         burst_length_l2_c => 8

@@ -3,6 +3,7 @@ use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 
 library nsl_usb, nsl_clocking, nsl_hwdep;
+library gatecap_generated;
 
 -- Gatecap over USB Full Speed on a Tang Console: three IOs to a USB socket,
 -- and the rack is a device on the bus.
@@ -72,7 +73,7 @@ begin
       dp_pullup_control_io => usb_dp_pull_io
       );
 
-  cap: work.demo_package.demo_core
+  cap: gatecap_generated.demo_package.demo_core
     generic map(
       burst_length_l2_c => 8
       )

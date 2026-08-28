@@ -21,19 +21,11 @@ whole link is three IOs and a PLL.
 The panel runs on the board's 50 MHz clock rather than on the USB one, so it
 keeps answering while the USB domain is held in reset.
 
-## Generating the core
+## The core
 
-The generated rack is not in the tree. Produce it from the description:
-
-    $ acrobe gatecap generate description.yaml -o generated/generated/demo_package
-    description.yaml: rack demo_package.demo_core, 1 instrument(s) over usb
-    wrote generated/generated/demo_package/demo_core_panel.vhd
-    wrote generated/generated/demo_package/demo_package.pkg.vhd
-    wrote generated/generated/demo_package/demo_core_backplane.vhd
-    wrote generated/generated/demo_package/demo_core.vhd
-    wrote generated/generated/demo_package/demo_package.gbs.yaml
-
-`gateware/regenerate` does the same for every description in the tree.
+The rack is not in the tree: `project.gbs.yaml` declares `description.yaml`
+as a repository and depends on `gatecap_generated.demo_package`, so the build
+generates it. That needs the gatecap host package installed (`doc/host`).
 
 ## Build the bitstream
 
@@ -108,6 +100,5 @@ async def main():
     led: 0
 
 Every output quoted under "Connecting" came from one session against this
-board, over the USB link itself; the generator's is a real run too. The
-`/path/to` in the programming command is the one thing left for you to fill
-in.
+board, over the USB link itself. The `/path/to` in the programming command is
+the one thing left for you to fill in.

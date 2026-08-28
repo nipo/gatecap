@@ -5,7 +5,8 @@ use ieee.numeric_std.all;
 library nsl_amba, nsl_bnoc, nsl_spi, nsl_io, nsl_memory, nsl_data;
 use nsl_amba.axi4_stream.all;
 use nsl_data.bytestream.all;
-use work.spi_probe.all;
+library gatecap_generated;
+use gatecap_generated.spi_probe.all;
 
 -- Usage example: a generated gatecap capture rack and an SPI transactor
 -- driving an SPI memory target, each behind its own UDP-to-stream bridge. The

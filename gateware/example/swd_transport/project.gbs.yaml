@@ -1,41 +1,25 @@
 name: gatecap_usb2
 
+# The rack's description is a repository of its own: it stands for the
+# library the generated units are analysed into.
+repositories:
+  - path: description.yaml
+    loader: gatecap-description
+
 root:
   name: top
   deps:
-    - gatecap.adapter_swd
-    - gatecap.bnoc_packer
-    - gatecap.capture
-    - gatecap.control
-    - gatecap.descriptor
-    - gatecap.trace
-    - nsl_amba.address
-    - nsl_amba.apb
-    - nsl_amba.apb_routing
-    - nsl_amba.axi4_mm
-    - nsl_amba.axi_apb
-    - nsl_amba.rom
-    - nsl_bnoc.axi_adapter
-    - nsl_bnoc.framed
+    # The rack, and what the top level and the phy wrapper themselves use.
+    - gatecap_generated.spi_probe
     - nsl_bnoc.chunked_link
+    - nsl_bnoc.framed
     - nsl_bnoc.pipe
-    - nsl_clocking.async
-    - nsl_clocking.distribution
-    - nsl_clocking.interdomain
     - nsl_clocking.pll
-    - nsl_coresight.ap
-    - nsl_coresight.dapbus
-    - nsl_coresight.dp
     - nsl_coresight.swd
-    - nsl_data.bytestream
     - nsl_hwdep.clock
-    - nsl_hwdep.reset
     - nsl_indication.activity
-    - nsl_math.arith
-    - nsl_memory.rom
+    - nsl_io.io
     - nsl_spi.transactor
-    - nsl_synthesis.assertion
-    - nsl_usb.fs_phy
     - nsl_usb.func
     - nsl_usb.io
     - nsl_usb.usb
@@ -48,10 +32,6 @@ root:
       files:
         - phy/softphy.pkg.vhd
         - phy/gw_usb2_phy.vhd
-        - generated/spi_swd_capture_la.vhd
-        - generated/spi_probe.pkg.vhd
-        - generated/spi_swd_capture_backplane.vhd
-        - generated/spi_swd_capture.vhd
         - main.vhd
     - file_type: gowin-cst
       files:

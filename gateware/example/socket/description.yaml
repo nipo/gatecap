@@ -1,8 +1,4 @@
-# Regenerate the VHDL sitting in generated/ with:
-#
-#   cd host && python3.13 -m acrobe gatecap generate \
-#     ../gateware/example/socket/description.yaml \
-#     -o ../gateware/example/socket/generated/
+# The build generates the rack's VHDL from this description.
 #
 # The reference socket harness: one capture domain on the clock the stream
 # transport rides, eight bits probed one by one so the descriptor names them

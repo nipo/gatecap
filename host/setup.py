@@ -6,7 +6,12 @@ setup(
     description="acrobe plugin for the gatecap capture core",
     author="Nicolas Pouillon",
     license="BSD",
-    packages=find_namespace_packages(include=["acrobe_plugin.*"]),
+    # Two plugin namespaces: the instrumentation stack as an acrobe plugin,
+    # and the rack generator as a gbs plugin so a gbs project can list a
+    # description as a source. The gbs namespace is installed
+    # unconditionally: without gbs there is simply nothing importing it.
+    packages=(find_namespace_packages(include=["acrobe_plugin.*"])
+              + find_namespace_packages(include=["gbs.*"])),
     # A block driver ships its UI (panel.js, ...) as a package resource next to
     # its Python; the GUI shell is a package resource too. Include them so a
     # non-editable install can still serve each driver's UI.

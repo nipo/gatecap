@@ -4,7 +4,9 @@ use ieee.numeric_std.all;
 
 library nsl_amba;
 use nsl_amba.apb.all;
-use work.async_pkg.all;
+
+library gatecap_generated;
+use gatecap_generated.async_pkg.all;
 
 -- Asynchronous capture clock: the APB/host side runs on clock_s, the capture
 -- core, trigger match and buffer write side on cap_clock_s (a different rate,

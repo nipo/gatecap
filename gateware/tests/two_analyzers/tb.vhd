@@ -4,7 +4,9 @@ use ieee.numeric_std.all;
 
 library nsl_amba;
 use nsl_amba.apb.all;
-use work.twola_pkg.all;
+
+library gatecap_generated;
+use gatecap_generated.twola_pkg.all;
 
 -- Two logic analyzers behind one backplane: each lays out its own map and
 -- declares its own footprint, and the rack allocates them a segment apiece

@@ -7,7 +7,8 @@ library nsl_amba, nsl_bnoc, nsl_simulation, nsl_spi, nsl_io,
 use nsl_amba.axi4_stream.all;
 use nsl_data.bytestream.all;
 use nsl_coresight.swd.all;
-use work.spi_probe.all;
+library gatecap_generated;
+use gatecap_generated.spi_probe.all;
 
 -- A generated capture core reached over SWD, probing an SPI link.
 --

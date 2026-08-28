@@ -4,7 +4,8 @@ use ieee.numeric_std.all;
 
 library nsl_amba;
 use nsl_amba.axi4_stream.all;
-use work.enum_pkg.all;
+library gatecap_generated;
+use gatecap_generated.enum_pkg.all;
 
 -- Like the socket harness, but the 8 counter bits are advertised as one bus
 -- carrying an enum: values 0..2 come from a well-known base (demo.phase), 3..5

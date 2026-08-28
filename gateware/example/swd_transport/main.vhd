@@ -2,7 +2,8 @@ library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 
-library nsl_usb, nsl_memory, nsl_clocking, nsl_hwdep, nsl_bnoc, nsl_spi, nsl_io, nsl_indication, nsl_amba, gatecap, nsl_coresight, work;
+library nsl_usb, nsl_clocking, nsl_hwdep, nsl_bnoc, nsl_spi, nsl_io, nsl_indication, nsl_coresight, work;
+library gatecap_generated;
 
 entity main is
   port (
@@ -250,7 +251,7 @@ begin
         swclk_i => swclk_i
         );
 
-    capture: work.spi_probe.spi_swd_capture
+    capture: gatecap_generated.spi_probe.spi_swd_capture
       port map(
         reset_n_i => reset_n_s,
         swd_i => slave_swd_s.i,

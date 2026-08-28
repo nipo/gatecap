@@ -1,8 +1,5 @@
-# Regenerate the VHDL sitting in generated/ with:
-#
-#   cd host && python3.13 -m acrobe gatecap generate \
-#     ../gateware/example/socket_edge/description.yaml \
-#     -o ../gateware/example/socket_edge/generated/
+# The build generates the rack from this description; the emitted units are
+# analysed into the gatecap_generated library.
 #
 # The reference socket harness fitted with the edge/transition trigger: the
 # same eight probed bits, matched on rising and falling terms instead of on a

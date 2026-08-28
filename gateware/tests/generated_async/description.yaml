@@ -1,8 +1,4 @@
-# Regenerate the VHDL sitting in generated/ with:
-#
-#   cd host && python3.13 -m acrobe gatecap generate \
-#     ../gateware/tests/generated_async/description.yaml \
-#     -o ../gateware/tests/generated_async/generated/
+# The build generates the rack's VHDL from this description.
 #
 # One capture domain on a clock of its own: the communication section names no
 # clock, so the rack takes dedicated host clock and reset ports and the

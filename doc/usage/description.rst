@@ -21,7 +21,7 @@ with two domains on unrelated clocks, correlated by one trigger:
 
 .. code-block:: yaml
 
-   name: rack_partition.demo_rack
+   name: demo_pkg.demo_rack
 
    communication:
      mode: axi4_stream
@@ -78,10 +78,10 @@ Name
 ----
 
 ``name`` is a dotted ``package.entity`` pair. The first half names the
-emitted package, the file holding it and the gbs partition; the second names
-the rack entity and its file. The library is yours — the generated partition
-does not name one. The two halves must differ, since VHDL forbids reusing the
-package name inside it.
+emitted package, the file holding it and the gbs partition
+(``gatecap_generated.<package>``, :doc:`build`); the second names the rack
+entity and its file. The two halves must differ, since VHDL forbids reusing
+the package name inside it.
 
 Ports are named after the description, instrument instance first: a signal
 becomes ``<instance>_<domain>_<signal>_i``, and every domain gets
@@ -104,7 +104,7 @@ in one rack are legal and mean two independent arm groups:
 
 .. code-block:: yaml
 
-   name: rack_partition.demo_rack
+   name: demo_pkg.demo_rack
 
    communication:
      mode: apb
@@ -155,7 +155,7 @@ analyzer, one probe:
 
 .. code-block:: yaml
 
-   name: rack_partition.demo_rack
+   name: demo_pkg.demo_rack
 
    communication:
      mode: axi4_stream

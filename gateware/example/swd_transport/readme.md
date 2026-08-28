@@ -8,11 +8,11 @@ This demo platform features:
 
 * A Gatecap capture system that answers on two pins that implement SWD target.
 
-## Generating the core
+## The core
 
-Run gatecap acrobe plugin on description to obtain missing files:
-
-    $ acrobe gatecap generate description.yaml -o generated
+The rack is not in the tree: `project.gbs.yaml` declares `description.yaml`
+as a repository and depends on `gatecap_generated.spi_probe`, so the build
+generates it. That needs the gatecap host package installed (`doc/host`).
 
 ## Build the bitstream
 

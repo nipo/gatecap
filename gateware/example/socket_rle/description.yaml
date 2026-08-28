@@ -1,8 +1,5 @@
-# Regenerate the VHDL sitting in generated/ with:
-#
-#   cd host && python3.13 -m acrobe gatecap generate \
-#     ../gateware/example/socket_rle/description.yaml \
-#     -o ../gateware/example/socket_rle/generated/
+# The build generates the rack from this description; the emitted units are
+# analysed into the gatecap_generated library.
 #
 # Run-length-encoded storage behind the socket harness: eight probed bits
 # stored one line per change, so the long stable runs of a slow counter collapse

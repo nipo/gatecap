@@ -4,7 +4,8 @@ use ieee.numeric_std.all;
 
 library nsl_amba;
 use nsl_amba.axi4_stream.all;
-use work.edge_pkg.all;
+library gatecap_generated;
+use gatecap_generated.edge_pkg.all;
 
 -- Like the socket bench (raw capture over a free-running counter), but the
 -- analyzer is fitted with the edge/transition trigger. The counter's low bits

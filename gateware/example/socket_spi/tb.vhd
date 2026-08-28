@@ -4,7 +4,8 @@ use ieee.numeric_std.all;
 
 library nsl_amba, nsl_bnoc, nsl_io, nsl_spi;
 use nsl_amba.axi4_stream.all;
-use work.spi_pkg.all;
+library gatecap_generated;
+use gatecap_generated.spi_pkg.all;
 
 -- UDP harness for a generated rack reached over plain SPI.
 --
