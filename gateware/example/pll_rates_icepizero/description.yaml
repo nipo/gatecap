@@ -1,0 +1,20 @@
+# The build generates the rack from this description; the emitted units are
+# analysed into the gatecap_generated library.
+#
+# Hardware counterpart of the pll_rates bench for the iCEPi-Zero: one clock
+# measurer watching every output of an NSL pll_multi instance against the
+# 50 MHz board oscillator the PLL itself runs from, reached over the board's
+# FT231X UART carrying HDLC frames. Reference and PLL input being the same
+# crystal, a measured rate is the realized input-to-output ratio, good to the
+# once-per-second window's quantum of 1 Hz.
+name: pll_rates_ipz.pll_rates_core
+
+communication:
+  mode: serial_hdlc
+
+instruments:
+  rates: !clock-measurer
+    reference: ref
+    frequency: 50_000_000
+    clocks: [out0, out1, out2]
+    max_rate: 160_000_000
