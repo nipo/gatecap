@@ -1,0 +1,24 @@
+# The build generates the rack from this description; the emitted units are
+# analysed into the gatecap_generated library.
+#
+# The measurement side of the PLL-under-test bench: one clock measurer
+# watching every output of an NSL pll_multi instance against the 50 MHz
+# reference the PLL itself runs from. Reference and PLL input being the same
+# clock, a measured rate is the realized input-to-output ratio, immune to the
+# reference's own error.
+#
+# update_hz_l2 is 14, not the once-per-second hardware default: the window is
+# 2**-14 reference seconds (~61 us, 3051 reference cycles), reachable in
+# simulated time, and rates come out to the nearest 16384 Hz.
+name: pll_rates_pkg.pll_rates_core
+
+communication:
+  mode: axi4_stream
+
+instruments:
+  rates: !clock-measurer
+    reference: ref
+    frequency: 50_000_000
+    clocks: [out0, out1, out2, out3]
+    max_rate: 160_000_000
+    update_hz_l2: 14

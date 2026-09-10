@@ -1,0 +1,28 @@
+name: pll_rates
+
+# The rack's description is a repository of its own: it stands for the
+# library the generated units are analysed into.
+repositories:
+  - path: description.yaml
+    loader: gatecap-description
+
+root:
+  name: top
+  deps:
+    # The rack, the PLL under test, and what the testbench itself uses.
+    - gatecap_generated.pll_rates_pkg
+    - nsl_amba.axi4_stream
+    - nsl_amba.stream_to_udp
+    - nsl_clocking.pll
+    - nsl_simulation.driver
+  sources:
+    - file_type: vhdl
+      files:
+        - tb.vhd
+
+output:
+  - name: simulation
+    topcell: tb
+    outputs:
+      - type: simulator
+        path: tb
