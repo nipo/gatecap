@@ -1,0 +1,15 @@
+set_io clock_i  21
+
+set_io led_o  95
+
+# FT2232H channel B, in MPSSE roles: BDBUS0 is the clock, BDBUS1 the
+# host's output, BDBUS2 its input, and BDBUS4 the first spare GPIO,
+# which is the chip select the host adapter drives.
+#
+# One scalar port per signal, not a vector: ghdl-yosys numbers vector
+# port bits from the rightmost VHDL index, so a pcf written against an
+# ascending range lands reversed.
+set_io spi_sck_i   9
+set_io spi_mosi_i  8
+set_io spi_miso_o  7
+set_io spi_cs_n_i  3
