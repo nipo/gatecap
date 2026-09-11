@@ -33,9 +33,12 @@ architecture arch of main is
 
   constant clock_i_hz_c: integer := 12e6;
 
+  -- The reference comes through fabric, not straight off the
+  -- package pin, so this is the SB_PLL40_CORE flavour.
   constant cfg_c : pll_config_t := pll_config(
     input_hz => clock_i_hz_c,
-    o0 => pll_output(20_000_000, tolerance_ppm => 20_000));
+    o0 => pll_output(20_000_000, tolerance_ppm => 20_000),
+    reference_input => nsl_clocking.pll_backend.pll_reference_id("CORE"));
 
   signal pll_clock_s : std_ulogic_vector(0 to cfg_c.output_count-1);
   signal locked_s : std_ulogic;
@@ -62,8 +65,7 @@ begin
 
   pll: nsl_clocking.pll.pll_multi
     generic map(
-      config_c => cfg_c,
-      hw_variant_c => "ice40(in=core)"
+      config_c => cfg_c
       )
     port map(
       clock_i => clock_i,
