@@ -1,0 +1,26 @@
+# The build generates the rack from this description; the emitted units are
+# analysed into the gatecap_generated library.
+#
+# Phase meter for the GW5A PLLA. The design asks its PLL for four clocks of
+# the same rate, three of them shifted, and one fast clock to measure them
+# with. The measurement itself is in the gateware -- the number of fast-clock
+# ticks from the unshifted clock's rising edge to each shifted one's -- and
+# these status words are how the host reads it.
+#
+# The panel runs on the measuring clock, so the instrument's own crossing is
+# what carries the counts to the register file.
+name: pll_phase_hw.pll_phase_core
+
+communication:
+  mode: axi4_stream
+
+instruments:
+  phase: !control-status
+    clock: meter
+    tick-counter-width: 8
+
+    status:
+      offset1: 8
+      offset2: 8
+      offset3: 8
+      settled: 1

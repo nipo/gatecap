@@ -1,0 +1,63 @@
+name: pll_phase_usb2
+
+# The rack's description is a repository of its own: it stands for the
+# library the generated units are analysed into. The USB2 phy and the pin
+# constraints are shared with the tang_console example.
+repositories:
+  - path: description.yaml
+    loader: gatecap-description
+
+root:
+  name: top
+  deps:
+    # The rack, the PLL under test, and what the top level and the phy
+    # wrapper themselves use.
+    - gatecap_generated.pll_phase_hw
+    - nsl_amba.axi4_stream
+    - nsl_bnoc.axi_adapter
+    - nsl_bnoc.chunked_link
+    - nsl_bnoc.framed
+    - nsl_bnoc.pipe
+    - nsl_clocking.pll
+    - nsl_hwdep.clock
+    - nsl_indication.activity
+    - nsl_io.io
+    - nsl_usb.func
+    - nsl_usb.io
+    - nsl_usb.usb
+    - nsl_usb.utmi
+  sources:
+    - file_type: verilog
+      files:
+        - ../tang_console/phy/usb2_0_softphy.v
+    - file_type: vhdl
+      files:
+        - ../tang_console/phy/softphy.pkg.vhd
+        - ../tang_console/phy/gw_usb2_phy.vhd
+        - phase_meter.vhd
+        - main.vhd
+    - file_type: gowin-cst
+      files:
+        - ../tang_console/constraint/usb2.cst
+        - ../tang_console/constraint/done_led.cst
+        - ../tang_console/constraint/ready_led.cst
+        - ../tang_console/constraint/buttons.cst
+        - ../tang_console/constraint/clk.cst
+    - file_type: gowin-sdc
+      files:
+        - ../tang_console/constraint/clk.sdc
+
+output:
+  - name: synthesis
+    topcell: main
+    target:
+      part: GW5AT-LV60PG484AC1/I0#B
+      use_as_gpio:
+        - sspi
+        - mspi
+        - done
+        - ready
+        - cpu
+    outputs:
+      - type: bitstream
+        path: pll_phase.fs
