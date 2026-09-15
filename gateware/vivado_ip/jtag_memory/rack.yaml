@@ -1,0 +1,12 @@
+name: rack.jtag_memory
+
+communication:
+  mode: jtag
+
+instruments:
+  dut: !bus-explorer
+    clock: busclk
+    address-width: 12
+    data-width: 32
+    slots: 8
+    timeout: 1024

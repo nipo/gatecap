@@ -1,0 +1,35 @@
+name: apb_spi_ila
+
+output:
+  - name: gatecap_apb_spi_ila
+    topcell: apb_spi_ila_vivado_ip
+    target:
+      part: xc7z020-1clg400
+    backend_config:
+      gbs.builtin.vivado-ip:
+        tool: vivado
+        vendor: gbs
+        library: demo
+        name: apb_spi_ila
+        version: "1.0"
+        taxonomy: /Gatecap/Demo
+        display_name: "Gatecap APB-based SPI ILA"
+        description: ""
+        supported_families:
+          - zynq
+          - artix7
+          - zynquplus
+    outputs:
+      - type: vivado-ip-zip
+        path: gatecap_apb_spi_ila.zip
+
+root_library_name: gatecap_generated
+
+root:
+  name: root_partition
+  deps:
+    - gatecap_generated.apb_spi_ila_vivado_ip
+
+repositories:
+  - path: rack.yaml
+    loader: gatecap-description

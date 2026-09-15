@@ -1,0 +1,30 @@
+name: rack.apb_spi_ila
+
+communication:
+  mode: apb
+
+instruments:
+  la: !logic-analyzer
+    storage:
+      # 4096 RLE lines: enough for several SPI transactions and the idle
+      # stretches between them.
+      buffer_depth_l2: 12
+      rle: true
+
+    trigger:
+      capabilities: value
+
+    domains:
+      spi:
+        clock: clock
+        frequency: 100_000_000
+
+        signals:
+          sck:
+            trigger: true
+          cs_n:
+            trigger: true
+          mosi:
+            trigger: true
+          miso:
+            trigger: true

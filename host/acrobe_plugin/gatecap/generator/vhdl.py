@@ -362,6 +362,45 @@ class RawStatement:
 
 
 @dataclass(frozen=True)
+class AttributeDecl:
+    """``attribute X_INTERFACE_INFO : string;``"""
+
+    name: str
+    type: str = "string"
+
+    def emit(self, out):
+        out.line(f"attribute {self.name} : {self.type};")
+
+
+@dataclass(frozen=True)
+class AttributeSpec:
+    """``attribute X_INTERFACE_INFO of aclk : signal is "...";``"""
+
+    attribute: str
+    of: str
+    value: str
+    entity_class: str = "signal"
+
+    def emit(self, out):
+        out.line(f"attribute {self.attribute} of {self.of} : "
+                 f"{self.entity_class} is {Expr.string(self.value)};")
+
+
+@dataclass(frozen=True)
+class Group:
+    """Declarations emitted as one block, with no blank line between them."""
+
+    items: tuple
+    comment: str | None = None
+
+    def emit(self, out):
+        if self.comment:
+            out.comment(self.comment)
+        for item in self.items:
+            item.emit(out)
+
+
+@dataclass(frozen=True)
 class Comment:
     text: str
 

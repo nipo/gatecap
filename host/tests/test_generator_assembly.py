@@ -94,7 +94,8 @@ def test_the_package_declares_what_the_backplane_instantiates():
         assert component in text
     # A stream configuration generic has no default: a value that happens to
     # elaborate would hide a mismatch with the probed bus.
-    assert "config_t :=" not in text
+    assert "config_c : nsl_amba.axi4_stream.config_t;" in text
+    assert "axi4_stream.config_t :=" not in text
 
 
 # The backplane

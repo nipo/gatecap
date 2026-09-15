@@ -1,0 +1,37 @@
+# Two capture domains over the stream transport, which rides the first of
+# them. Every probe is a logic vector, so the whole boundary reaches a Vivado
+# IP: the stream pair through the packers, the rest as plain pins.
+name: ip_pkg.ip_capture
+
+communication:
+  mode: axi4_stream
+  clock: la.main
+
+instruments:
+  la: !logic-analyzer
+    storage:
+      buffer_depth_l2: 10
+
+    trigger:
+      capabilities: value
+
+    domains:
+      main:
+        clock: clock
+        frequency: 100_000_000
+
+        signals:
+          command: !bus
+            width: 8
+            trigger: true
+
+      pixel:
+        clock: pixclk
+        frequency: 74_250_000
+        trigger:
+          from: main
+
+        signals:
+          data: !bus
+            width: 16
+          vsync: {}

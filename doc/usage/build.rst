@@ -99,6 +99,102 @@ emitted VHDL. Changing the generator itself — upgrading the host plugin, or
 editing a plugin of your own — does not trigger one, so clean the build
 directory after such a change.
 
+Packaging the rack as a Vivado IP
+---------------------------------
+
+A rack can be packaged as a block-design IP, and the topcell that packaging
+needs is generated too. A Vivado IP's boundary is flat pins carrying
+``X_INTERFACE_INFO`` attributes, where a rack's carries NSL records; the
+topcell is what stands between them, with one packer per record and the rack
+behind it.
+
+It is a partition of its own, and naming it is how a project asks for it::
+
+   # project.gbs.yaml
+   root_library_name: gatecap_generated
+
+   root:
+     name: <rack entity>_vivado_ip
+     deps:
+       - gatecap_generated.<rack entity>_vivado_ip
+
+   output:
+     - name: my_ip
+       topcell: <rack entity>_vivado_ip
+       target:
+         part: xczu9eg-ffvb1156-2-e
+       backend_config:
+         gbs.builtin.vivado-ip:
+           vendor: example.com
+           library: ip
+           name: my_ip
+           version: "1.0"
+           taxonomy: /UserIP
+       outputs:
+         - type: vivado-ip-zip
+           path: my_ip.zip
+
+The wrapper partition is named after the topcell it holds rather than after
+the package, so the ``deps`` entry and the ``topcell`` are the same word: a
+description called ``name: zynqmp.ila`` has its rack in
+``gatecap_generated.zynqmp`` and its wrapper in
+``gatecap_generated.ila_vivado_ip``.
+
+The description is not touched: it says nothing about Xilinx, and a project
+that never packages an IP never mentions the partition and never pays for it.
+The topcell is a unit of the generated library, so that library is the root's
+and the root declares no source of its own. What the IP *is* called stays in
+the output group, beside the part — both are the build's business, not the
+rack's.
+
+What ends up on the boundary:
+
+* the ``axi4_stream`` transport's two port pairs become an AXI4-Stream slave
+  (``s_axis``) and master (``m_axis``), and the ``apb`` transport's completer
+  an APB slave (``s_apb``), both packed by ``nsl_amba.packer``;
+* a bus explorer's target bus becomes an APB master of its own, named after
+  the instance;
+* every bus pin carries a width written as a number. The packager works its
+  IP-XACT expressions out of the port clause itself and evaluates no VHDL, so
+  a width it cannot read as a literal is a width it refuses; the rack's
+  completer is therefore packaged at the 24 address bits and 32 data bits it
+  provisions, and what the map really elaborated to is *checked* against the
+  boundary rather than sizing it. A rack that outgrows them fails elaboration
+  with the pin and the two widths named, in simulation and in synthesis
+  alike;
+* the host clock and reset become ``aclk`` and ``aresetn``. When
+  ``communication.clock`` names a domain's clock, the rack and that domain are
+  one domain, so its reset and the rack's host reset are one pin;
+* every other domain keeps a clock and reset pair of its own, named after its
+  rack ports. Each clock publishes the rate the description states, the buses
+  it clocks and the reset that goes with it, so a block design wires them
+  without being told;
+* every probed signal crosses as a plain pin, under the very name the rack
+  gives it;
+* the ``jtag`` transport's TAP pins are left off altogether. Xilinx wires the
+  TAP internally, so the adapter's primitive reaches the chip's own and a pin
+  for each of them would be a pin nothing may drive; the rack takes them open,
+  which is what their default assignments are for.
+
+``burst_length_l2_c`` becomes an IP parameter — the rack has no default for
+it, and a packaged IP needs one — and the stream geometry is fixed by the
+adapter's own contract rather than exposed.
+
+A port the generator has no way to flatten is refused by name, with the type
+and the types it does know::
+
+   port 'la_control_command_i' of type nsl_amba.axi4_stream.bus_t has no
+   Vivado binding (bound: nsl_amba.axi4_stream.master_t, ...)
+
+That is the state of things today: every transport of loose logic wires
+(``jtag``, ``serial_hdlc``), the two bus transports (``axi4_stream``,
+``apb``), the bus explorer's target bus and every probed vector are packaged;
+a probed record and the ``spi``, ``swd`` and ``usb`` pins are not, for want of
+a packer to flatten them with.
+
+Outside gbs, ``acrobe gatecap generate --vivado-ip`` writes the topcell beside
+the rack and lists it in the emitted partition manifest.
+
 What the generator refuses
 --------------------------
 

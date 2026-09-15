@@ -12,10 +12,21 @@ class BridgedCommunication(CommunicationPlugin):
     read budget, not a property of the wire."""
 
     BURST_LENGTH = "burst_length_l2_c"
+    # The budget a packaged IP is handed when nothing states one. A rack
+    # instantiated by hand states it every time, so the rack generic has no
+    # default; an IP parameter must have a value the block design elaborates
+    # with, and 64 words is what a link of this shape reads comfortably.
+    VIVADO_BURST_LENGTH = 6
 
     @classmethod
     def generics(cls, context):
         return (Generic(cls.BURST_LENGTH, "natural"),)
+
+    @classmethod
+    def vivado_generics(cls, context):
+        return {cls.BURST_LENGTH: Generic(
+            cls.BURST_LENGTH, "natural", default=str(cls.VIVADO_BURST_LENGTH),
+            comment="Words the host may read in one command, log2.")}
 
     @classmethod
     def generic_map(cls, context):

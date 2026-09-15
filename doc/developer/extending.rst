@@ -16,7 +16,8 @@ All of gatecap's extension points are keyed lookups:
   registries: instruments by the YAML tag of an ``instruments`` entry,
   communication modes by their ``mode`` name, and signal types by the YAML tag
   of a probed signal. An unknown tag or mode is a description error listing
-  what *is* registered.
+  what *is* registered. A fourth, keyed by rack-side VHDL type, serves the
+  Vivado IP topcell alone, and only a rack being packaged ever meets it.
 * The **build** resolves VHDL dependencies through gbs repositories: a
   partition key like ``gatecap.capture`` is looked up across every repository
   the configuration lists.
@@ -743,6 +744,79 @@ classes and the nodes:
    from acrobe_plugin.gatecap.generator import (Constant, Expr, Generic,
                                                 Instance, Port)
 
+Vivado interfaces, keyed by port type
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+A rack may be packaged as a Vivado block-design IP
+(:doc:`../usage/build`), and the topcell that needs — flat pins carrying
+``X_INTERFACE_INFO`` attributes, with the records packed behind them — is
+generated from what the plugins already declare. Two seams carry the part
+they cannot guess.
+
+``VivadoIoRegistry`` is keyed by the rack-side VHDL type. One entry says how
+that type becomes pins, which library entity packs it and which IP-XACT bus
+it is, so a record registered once serves every plugin that puts it on a
+boundary — the APB entry serves the ``apb`` transport's completer and the bus
+explorer's target bus alike:
+
+.. code-block:: python
+
+   from acrobe_plugin.gatecap.generator import (Exposure, VivadoIo,
+                                                VivadoIoRegistry)
+
+
+   @VivadoIoRegistry.register
+   class MyLinkIo(VivadoIo):
+       TYPES = ("mylib.mylink.master_t", "mylib.mylink.slave_t")
+       BUS = "example.com:interface:mylink:1.0"
+       DEPS = ("mylib.packer",)
+
+       @classmethod
+       def expose(cls, interface, ports):
+           ...  # -> Exposure
+
+``expose`` returns an :class:`Exposure`: the flat boundary ports, the
+``AttributeSpec`` over them, the constants and signals the glue declares, the
+packer instances, the rack formal-to-actual bindings, and the gbs partitions
+the glue pulls in. A port whose type no entry claims is a generation error
+naming the port, the type and the types that *are* bound — never a pin the
+packager would silently get wrong.
+
+The second seam is ``vivado_interfaces``, an optional classmethod on all
+three plugin bases, defaulting to ``()``. It says which of the plugin's own
+ports form one interface, which way it faces and what it is called; ports no
+interface claims cross as plain pins of their own type, which is what every
+probed vector is:
+
+.. code-block:: python
+
+   @classmethod
+   def vivado_interfaces(cls, context):
+       return (BusInterface("s_axis", ("rx_i", "rx_o"), "slave",
+                            clock=context.clock, params=...),)
+
+Three kinds are declared: ``BusInterface`` (the ports, the mode, the rack
+port of the clock it runs on, and whatever its binding reads out of
+``params``), ``ClockInterface`` (the pin name, the rack port, the rate the
+description states and the reset of the same domain) and ``ResetInterface``
+(the pin name and *every* rack reset it drives, which is how two resets that
+are one reset become one pin). ``ASSOCIATED_BUSIF`` is derived from the
+clocks the buses name, not declared.
+
+``Unbound`` is the fourth, and the only one that takes pins away: it names
+ports the boundary leaves out, which the rack then takes ``open``. That is for
+a port a vendor primitive already answers for -- the TAP pins on Xilinx, where
+the adapter reaches the chip's own TAP from inside the fabric -- and an input
+named there must have a default, or nothing would drive it.
+
+A generic is the last thing to say: a scalar crosses as an IP parameter and
+must have a default, and a record cannot cross at all. ``vivado_generics``
+on the transport and instrument bases maps a generic name to what the wrapper
+puts in its place — a ``Constant`` it declares, or a ``Generic`` of its own
+carrying the default the rack has no business fixing. The stream transport
+fixes its ``config_t`` that way, its geometry being the adapter's contract
+rather than the design's choice.
+
 Instruments, keyed by tag
 ~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -992,6 +1066,9 @@ A complete extension, end to end:
 * Generator, when descriptions should name your type: an
   ``InstrumentRegistry``, ``CommunicationRegistry`` or ``SignalTypeRegistry``
   entry whose ``deps()`` names your gbs partitions.
+* Vivado packaging, when a rack holding your type should reach a block
+  design: ``vivado_interfaces`` over the ports you put on the boundary, and a
+  ``VivadoIoRegistry`` entry for any record among them.
 * Install: ``pip install`` (editable installs with ``editable_mode=compat``)
   and one ``repositories:`` entry in the gbs configuration.
 

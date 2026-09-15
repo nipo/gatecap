@@ -9,6 +9,7 @@ from gbs.base import BaseDispatcher
 from gbs.build.task import BuildError, ResourceTypology
 from gbs.ui.messages import MessageSeverity
 
+from .repository import GatecapDescriptionRepository
 from .task import GatecapGenerateTask
 
 
@@ -42,11 +43,13 @@ class GatecapGenerateDispatcher(BaseDispatcher):
                 file_type=[self.DESCRIPTION_TYPE]):
             rack = self.rack_of(description)
             name = self.claim(description, rack)
-            outputs = self.outputs_of(description, rack, name)
+            vivado_ip = self.wrapped(rack)
+            outputs = self.outputs_of(description, rack, name, vivado_ip)
             GatecapGenerateTask(dispatcher=self, source=description, rack=rack,
-                                outputs=outputs)
-            self.order(rack, outputs)
-            self.info(f"rack {name} generated from {description.path.name}")
+                                outputs=outputs, vivado_ip=vivado_ip)
+            self.order(rack, outputs, vivado_ip)
+            self.info(f"rack {name} generated from {description.path.name}"
+                      + (", with its Vivado IP topcell" if vivado_ip else ""))
 
     async def process(self):
         pass
@@ -88,7 +91,23 @@ class GatecapGenerateDispatcher(BaseDispatcher):
                                    line=e.line)
             raise BuildError(f"{description.path}: {e}") from e
 
-    def outputs_of(self, description, rack, name):
+    def wrapped(self, rack):
+        """Whether this rack's Vivado IP topcell was asked for.
+
+        Both partitions of a description hold the description itself, and
+        resources are singletons by path, so the pending queue cannot tell
+        them apart. What the project resolved to can: the wrapper partition is
+        in the fileset exactly when something depends on it.
+        """
+        fileset = self.context.source_fileset
+        if fileset is None:
+            return False
+        suffix = GatecapDescriptionRepository.VIVADO_IP_SUFFIX
+        wanted = (f"{GatecapDescriptionRepository.LIBRARY}."
+                  f"{rack.entity_name()}{suffix}")
+        return wanted in set(fileset.partitions)
+
+    def outputs_of(self, description, rack, name, vivado_ip):
         """One intermediate resource per emitted file, in analysis order,
         in the library the description itself belongs to."""
         directory = self.directory() / name
@@ -97,9 +116,9 @@ class GatecapGenerateDispatcher(BaseDispatcher):
                                           library=description.library,
                                           typology=ResourceTypology.INTERMEDIATE,
                                           generated_by=self.name)
-                for file_name in rack.file_names()]
+                for file_name in rack.file_names(vivado_ip)]
 
-    def order(self, rack, outputs):
+    def order(self, rack, outputs, vivado_ip):
         """Wire the generated files onto the libraries they are analysed
         after.
 
@@ -108,7 +127,7 @@ class GatecapGenerateDispatcher(BaseDispatcher):
         carry them instead, or their library ranks ahead of the libraries it
         instantiates from.
         """
-        libraries = {dep.split(".", 1)[0] for dep in rack.deps()}
+        libraries = {dep.split(".", 1)[0] for dep in rack.deps(vivado_ip)}
         dependencies = set()
         for library in libraries:
             dependencies.update(self.context.filter_pending(

@@ -12,8 +12,9 @@ class GatecapGenerateTask(Task):
     and is not written.
     """
 
-    def __init__(self, dispatcher, source, rack, outputs):
+    def __init__(self, dispatcher, source, rack, outputs, vivado_ip=False):
         self.rack = rack
+        self.vivado_ip = vivado_ip
         name = rack.description.name.dotted()
         super().__init__(dispatcher,
                          name=f"gatecap_generate_{name}",
@@ -22,14 +23,14 @@ class GatecapGenerateTask(Task):
                          description=f"generate rack {name}")
 
     async def work(self):
-        rendered = self.rack.files()
+        rendered = self.rack.files(self.vivado_ip)
         declared = {output.path.name: output for output in self.outputs}
-        names = set(self.rack.file_names())
+        names = set(self.rack.file_names(self.vivado_ip))
         assert names == set(declared), (
             f"rack {self.rack.description.name.dotted()} emits {sorted(names)}, "
             f"the build declared {sorted(declared)}")
 
-        for name in self.rack.file_names():
+        for name in self.rack.file_names(self.vivado_ip):
             path = declared[name].path
             path.parent.mkdir(parents=True, exist_ok=True)
             path.write_text(rendered[name])

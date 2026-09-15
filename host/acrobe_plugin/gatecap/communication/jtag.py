@@ -1,6 +1,6 @@
 """``jtag``: the command bytes ride the FPGA's own TAP."""
 
-from ..generator import CommunicationRegistry, Port
+from ..generator import CommunicationRegistry, Port, Unbound
 from .bridged import BridgedCommunication
 
 
@@ -28,6 +28,14 @@ class JtagCommunication(BridgedCommunication):
                 Port("chip_tms_i", "in", "std_ulogic", default="'0'"),
                 Port("chip_tdi_i", "in", "std_ulogic", default="'0'"),
                 Port("chip_tdo_o", "out", "std_ulogic"))
+
+    @classmethod
+    def vivado_interfaces(cls, context):
+        # Xilinx is a vendor that wires the TAP internally, so a packaged IP
+        # keeps the pins off its boundary: the primitive the adapter holds
+        # reaches the chip's own on its own, and there is nothing a block
+        # design could connect here.
+        return (Unbound(tuple(port.name for port in cls.ports())),)
 
     @classmethod
     def deps(cls):

@@ -384,6 +384,8 @@ def test_the_package_states_the_default_apb_configuration():
         address_width => nsl_math.arith.max(24, \
 nsl_math.arith.log2(segment_extent(envelopes_c, rom_size_l2_c))),
         data_bus_width => 8 * 2**data_bus_width_l2_c,
+        prot => false,
+        strb => false,
         err => true);""" in text
 
 

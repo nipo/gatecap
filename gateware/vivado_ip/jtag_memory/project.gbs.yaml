@@ -1,0 +1,35 @@
+name: jtag_memory
+
+output:
+  - name: gatecap_memory
+    topcell: jtag_memory_vivado_ip
+    target:
+      part: xc7z020-1clg400
+    backend_config:
+      gbs.builtin.vivado-ip:
+        tool: vivado
+        vendor: gbs
+        library: demo
+        name: jtag_memory
+        version: "1.0"
+        taxonomy: /Gatecap/Demo
+        display_name: "Gatecap JTAG bus explorer"
+        description: ""
+        supported_families:
+          - zynq
+          - artix7
+          - zynquplus
+    outputs:
+      - type: vivado-ip-zip
+        path: gatecap_jtag_bus_explorer.zip
+
+root_library_name: gatecap_generated
+
+root:
+  name: root_partition
+  deps:
+    - gatecap_generated.jtag_memory_vivado_ip
+
+repositories:
+  - path: rack.yaml
+    loader: gatecap-description

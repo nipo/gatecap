@@ -1,0 +1,13 @@
+name: rack.ila
+
+communication:
+  mode: serial_hdlc
+  clock: rates.ref
+
+instruments:
+  rates: !clock-measurer
+    reference: ref
+    frequency: 100_000_000
+    clocks: [fast, slow, odd]
+    max_rate: 200_000_000
+    update_hz_l2: 14

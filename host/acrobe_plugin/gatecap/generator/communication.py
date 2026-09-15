@@ -43,6 +43,10 @@ class CommunicationContext:
     fingerprint: str = ""
     # What the mode's own keys parsed to, as its plugin returned them.
     params: dict = field(default_factory=dict)
+    # Shape of the APB completer the rack derived from its own map, for a
+    # passthrough mode putting it on the boundary. An ApbGeometry, or None
+    # when the rack has no such geometry to offer.
+    apb_geometry: object = None
 
 
 @dataclass(frozen=True)
@@ -145,6 +149,21 @@ class CommunicationPlugin:
         """Adapter generics that are not boundary generics."""
         return {cls.APB_CONFIG: context.apb_config,
                 cls.DESCRIPTOR_BASE: context.descriptor_base}
+
+    @classmethod
+    def vivado_interfaces(cls, context):
+        """Vivado interfaces over this transport's own boundary ports, for a
+        rack packaged as an IP. Ports no interface claims become plain pins,
+        so a mode of loose wires declares nothing."""
+        return ()
+
+    @classmethod
+    def vivado_generics(cls, context):
+        """Generic name -> what the wrapper puts in its place: a ``Constant``
+        it declares, for a generic a Vivado boundary cannot carry, or a
+        ``Generic`` of its own, for one whose default only the IP needs. A
+        generic with no entry crosses as it stands."""
+        return {}
 
     @classmethod
     def deps(cls):

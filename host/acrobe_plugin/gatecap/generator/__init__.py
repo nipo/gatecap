@@ -19,6 +19,11 @@ third-party plugin from its own package. Importing anything under
 ``acrobe_plugin.gatecap`` runs those registrations, so the registries are
 fully formed by the time a description is parsed.
 
+A fourth registry, :class:`VivadoIoRegistry`, is keyed by a rack-side VHDL
+type and says how it reaches the boundary of a rack packaged as a Vivado IP
+(:mod:`.vivado`). It serves the wrapper alone, so a description that is never
+packaged never meets it.
+
 The VHDL code model plugins emit through (:mod:`.vhdl`) is re-exported here,
 so a plugin takes its base classes, its registries and the nodes it builds
 declarations and statements from out of one namespace.
@@ -39,10 +44,14 @@ from .parser import DescriptionParser
 from .rack import RackAssembly
 from .schema import Communication, Description, Instrument, Name
 from .signal_types import SignalTypePlugin, SignalTypeRegistry
-from .vhdl import (Architecture, Assignment, Comment, ComponentDecl, Constant,
-                   DesignFile, Entity, Expr, FunctionBody, FunctionDecl,
-                   Generic, Identifier, Instance, Package, PackageBody, Port,
-                   Process, RawStatement, SignalDecl)
+from .vhdl import (Architecture, Assignment, AttributeDecl, AttributeSpec,
+                   Comment, ComponentDecl, Constant, DesignFile, Entity, Expr,
+                   FunctionBody, FunctionDecl, Generic, Group, Identifier,
+                   Instance, Package, PackageBody, Port, Process,
+                   RawStatement, SignalDecl)
+from .vivado import (ApbGeometry, BusInterface, ClockInterface, Exposure,
+                     ResetInterface, StreamGeometry, Unbound, VivadoIo,
+                     VivadoIoRegistry, VivadoIpWrapper, boundary_name)
 
 
 class Generator:
@@ -54,21 +63,24 @@ class Generator:
 
 
 __all__ = [
-    "Architecture", "Assignment",
-    "Cdc", "Check", "ClockDomain", "Comment", "Communication",
-    "CommunicationContext", "CommunicationPlugin", "CommunicationRegistry",
-    "ComponentDecl", "Constant",
+    "ApbGeometry", "Architecture", "Assignment", "AttributeDecl",
+    "AttributeSpec", "BusInterface",
+    "Cdc", "Check", "ClockDomain", "ClockInterface", "Comment",
+    "Communication", "CommunicationContext", "CommunicationPlugin",
+    "CommunicationRegistry", "ComponentDecl", "Constant",
     "Description", "DescriptionError", "DescriptionParser", "DesignFile",
-    "Entity", "EnumSpec", "Expr", "Field",
+    "Entity", "EnumSpec", "Exposure", "Expr", "Field",
     "FunctionBody", "FunctionDecl",
-    "GbsManifest", "Generator", "Generic",
+    "GbsManifest", "Generator", "Generic", "Group",
     "HostClock", "Identifier", "Instance", "Instrument", "InstrumentContext",
     "InstrumentContribution",
     "InstrumentPlugin", "InstrumentRegistry",
     "Name",
     "Package", "PackageBody", "Port", "Process",
-    "RackAssembly", "RawStatement",
-    "SignalDecl", "SignalTypePlugin", "SignalTypeRegistry",
+    "RackAssembly", "RawStatement", "ResetInterface",
+    "SignalDecl", "SignalTypePlugin", "SignalTypeRegistry", "StreamGeometry",
     "Tagged",
+    "Unbound", "VivadoIo", "VivadoIoRegistry", "VivadoIpWrapper",
     "YamlSource",
+    "boundary_name",
     ]

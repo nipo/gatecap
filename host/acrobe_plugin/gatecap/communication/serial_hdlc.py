@@ -38,6 +38,19 @@ class SerialHdlcCommunication(BridgedCommunication):
                     "rate is the one thing the two ends must agree on."),)
         return generics + super().generics(context)
 
+    # The rate a packaged IP starts at. The rack generic has no default on
+    # purpose, but an IP parameter must carry a value, and 8n1 at this rate is
+    # what a host opens a port at when nothing says otherwise.
+    VIVADO_BAUD_RATE = 115200
+
+    @classmethod
+    def vivado_generics(cls, context):
+        generics = {cls.BAUD_RATE: Generic(
+            cls.BAUD_RATE, "natural", default=str(cls.VIVADO_BAUD_RATE),
+            comment="Bits per second on the line, 8n1.")}
+        generics.update(super().vivado_generics(context))
+        return generics
+
     @classmethod
     def clock_frequency(cls, context):
         """The rate as the adapter is given it: a literal when the description

@@ -34,6 +34,7 @@ from .instruments import InstrumentContext
 from .vhdl import (Architecture, Constant, DesignFile, Entity, Expr,
                    FunctionBody, FunctionDecl, Generic, Instance, Package,
                    PackageBody, Port, RawStatement, SignalDecl)
+from .vivado import ApbGeometry, VivadoIpWrapper
 
 
 class RackAssembly:
@@ -53,6 +54,12 @@ class RackAssembly:
     DESCRIPTOR_BASE = "0"
     # Address bits the rack provisions when nothing wider is asked for.
     ADDRESS_WIDTH = 24
+    # Options of the completer the rack offers. Every register file in a rack
+    # is a whole word wide and none of them is protected, so the two the spec
+    # leaves open stay out; an error response is how an unmapped address is
+    # answered, so that one is in.
+    APB_HAS_PROT = False
+    APB_HAS_STRB = False
     # nsl_amba.address.routing_table holds sixteen entries, and the descriptor
     # ROM takes the first.
     MAX_INSTRUMENTS = 15
@@ -123,7 +130,13 @@ class RackAssembly:
             clock_frequency=self.clocks.frequency,
             fingerprint=Expr.call("descriptor_fingerprint",
                                   self.__descriptor_call()),
-            params=description.communication.params)
+            params=description.communication.params,
+            apb_geometry=ApbGeometry(
+                config=self.APB_CONFIG,
+                address_width=self.ADDRESS_WIDTH,
+                data_bytes=2**self.DATA_BUS_WIDTH_L2,
+                prot=self.APB_HAS_PROT,
+                strb=self.APB_HAS_STRB))
         self.communication.check(self.communication_context)
 
     def __descriptor_call(self):
@@ -191,6 +204,7 @@ class RackAssembly:
             f"{self.entity_name()}_apb_config", self.instrument_generics(),
             self.APB_TYPE, comment=self.__config_comment())
 
+
     def instrument_arguments(self, name):
         return tuple(generic.name
                      for generic in self.instruments[name].generics)
@@ -250,6 +264,8 @@ class RackAssembly:
                               Expr.call("segment_extent", self.ENVELOPES,
                                         self.ROM_SIZE))),
                 data_bus_width=f"8 * 2**{self.DATA_BUS_WIDTH}",
+                prot=Expr.boolean(self.APB_HAS_PROT),
+                strb=Expr.boolean(self.APB_HAS_STRB),
                 err="true")))
         return tuple(bodies)
 
@@ -554,9 +570,12 @@ class RackAssembly:
 
     # Files
 
-    def deps(self):
-        return tuple(list(self.description.deps())
-                     + list(self.communication.deps()) + list(self.DEPS))
+    def deps(self, vivado_ip=False):
+        deps = (list(self.description.deps())
+                + list(self.communication.deps()) + list(self.DEPS))
+        if vivado_ip:
+            deps += list(self.vivado_deps())
+        return tuple(deps)
 
     def libraries(self):
         return DesignFile.libraries_of(sorted(set(self.deps())))
@@ -572,32 +591,56 @@ class RackAssembly:
             files.update(contribution.files)
         return files
 
-    def file_names(self):
+    def file_names(self, vivado_ip=False):
         """Every VHDL file of the rack, in analysis order."""
         return tuple(
             [name for name in self.plugin_files() if name.endswith(".vhd")]
             + [f"{self.package_name()}.pkg.vhd",
                f"{self.backplane_name()}.vhd",
-               f"{self.entity_name()}.vhd"])
+               f"{self.entity_name()}.vhd"]
+            + list(self.vivado_file_names() if vivado_ip else ()))
 
-    def manifest(self):
-        return GbsManifest.of(self.file_names(), self.deps())
+    def manifest(self, vivado_ip=False):
+        return GbsManifest.of(self.file_names(vivado_ip),
+                              self.deps(vivado_ip))
 
-    def files(self):
+    def files(self, vivado_ip=False):
         """File name -> contents, in analysis order."""
         files = dict(self.plugin_files())
         files[f"{self.package_name()}.pkg.vhd"] = self.package_file().render()
         files[f"{self.backplane_name()}.vhd"] = self.backplane_file().render()
         files[f"{self.entity_name()}.vhd"] = self.rack_file().render()
-        files[f"{self.package_name()}.gbs.yaml"] = self.manifest().render()
+        if vivado_ip:
+            files.update(self.vivado_files())
+        files[f"{self.package_name()}.gbs.yaml"] = \
+            self.manifest(vivado_ip).render()
         return files
 
-    def write(self, directory):
+    # Vivado IP wrapper
+
+    def vivado_wrapper(self):
+        """The rack behind a Vivado IP boundary. It is a unit of the same
+        library, asked for by name rather than emitted with the rack: a
+        description is not a Xilinx artefact, and most racks are never
+        packaged."""
+        return VivadoIpWrapper(self)
+
+    def vivado_file_names(self):
+        return tuple(self.vivado_files())
+
+    def vivado_files(self):
+        return self.vivado_wrapper().files()
+
+    def vivado_deps(self):
+        """What the wrapper needs on top of the rack's own partitions."""
+        return self.vivado_wrapper().deps()
+
+    def write(self, directory, vivado_ip=False):
         """Write the rack into ``directory``, creating it if needed, and
         return the paths written."""
         os.makedirs(directory, exist_ok=True)
         written = []
-        for name, contents in self.files().items():
+        for name, contents in self.files(vivado_ip).items():
             path = os.path.join(directory, name)
             with open(path, "w") as f:
                 f.write(contents)

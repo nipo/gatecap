@@ -1,6 +1,7 @@
 """``axi4_stream``: the command bytes arrive on the rack's own stream ports."""
 
-from ..generator import CommunicationRegistry, Generic, Port
+from ..generator import (BusInterface, CommunicationRegistry, Constant,
+                         Generic, Port, StreamGeometry)
 from .bridged import BridgedCommunication
 
 
@@ -33,6 +34,28 @@ class Axi4StreamCommunication(BridgedCommunication):
                        cls.STREAM_CONFIG: cls.STREAM_CONFIG}
         generic_map.update(super().generic_map(context))
         return generic_map
+
+    # The adapter carries one byte per beat with last, and nothing else:
+    # that is its wire, not a geometry the instantiating design picks. The
+    # packaged IP therefore states it rather than taking it as a parameter.
+    GEOMETRY = StreamGeometry(data_bytes=1, last=True)
+
+    @classmethod
+    def vivado_interfaces(cls, context):
+        params = {"config": cls.STREAM_CONFIG, "geometry": cls.GEOMETRY}
+        return (BusInterface("s_axis", ("rx_i", "rx_o"), "slave",
+                             clock=context.clock, params=params),
+                BusInterface("m_axis", ("tx_o", "tx_i"), "master",
+                             clock=context.clock, params=params))
+
+    @classmethod
+    def vivado_generics(cls, context):
+        generics = {cls.STREAM_CONFIG: Constant(
+            cls.STREAM_CONFIG, "nsl_amba.axi4_stream.config_t",
+            cls.GEOMETRY.config(),
+            comment="Both link streams, as the adapter speaks them.")}
+        generics.update(super().vivado_generics(context))
+        return generics
 
     @classmethod
     def deps(cls):

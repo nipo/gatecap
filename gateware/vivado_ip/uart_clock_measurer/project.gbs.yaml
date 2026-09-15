@@ -1,0 +1,35 @@
+name: uart_clock_measurer
+
+output:
+  - name: gatecap_clock_measurer
+    topcell: ila_vivado_ip
+    target:
+      part: xc7z020-1clg400
+    backend_config:
+      gbs.builtin.vivado-ip:
+        tool: vivado
+        vendor: gbs
+        library: demo
+        name: clock_measurer
+        version: "1.0"
+        taxonomy: /Gatecap/Demo/ClockMeasurer
+        display_name: "Gatecap UART-based clock measurer"
+        description: ""
+        supported_families:
+          - zynq
+          - artix7
+          - zynquplus
+    outputs:
+      - type: vivado-ip-zip
+        path: gatecap_uart_clock_measurer.zip
+
+root_library_name: gatecap_generated
+
+root:
+  name: ila_vivado_ip
+  deps:
+    - gatecap_generated.ila_vivado_ip
+
+repositories:
+  - path: rack.yaml
+    loader: gatecap-description

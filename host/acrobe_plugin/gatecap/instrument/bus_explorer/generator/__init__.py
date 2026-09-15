@@ -19,13 +19,15 @@ formal.
 
 from __future__ import annotations
 
-from acrobe_plugin.gatecap.generator import (Architecture, Check, ClockDomain,
-                                             Constant, DescriptionError,
-                                             DesignFile, Entity, Expr, Field,
-                                             Generic, Instance,
-                                             InstrumentPlugin,
+from acrobe_plugin.gatecap.generator import (ApbGeometry, Architecture,
+                                             BusInterface, Check, ClockDomain,
+                                             ClockInterface, Constant,
+                                             DescriptionError, DesignFile,
+                                             Entity, Expr, Field, Generic,
+                                             Instance, InstrumentPlugin,
                                              InstrumentRegistry, Port,
-                                             SignalDecl)
+                                             ResetInterface, SignalDecl,
+                                             boundary_name)
 from .cdc import Stream, StreamCdc
 
 
@@ -159,6 +161,38 @@ class Explorer:
                     f"paddr."))
         ports.append(Port(self.target_port("i"), "in", "nsl_amba.apb.slave_t"))
         return tuple(ports)
+
+    TARGET_CONFIG = "target_config_c"
+    TARGET_CONFIG_FUNCTION = "gatecap.bus_explorer.target_apb_config"
+
+    def vivado_interfaces(self):
+        """The target bus as an APB master interface, and the clock and reset
+        it runs on when the instance has one of its own -- otherwise it runs on
+        the rack's, which the wrapper fills in."""
+        interfaces = []
+        clock = None
+        if self.clock() is not None:
+            clock = self.clock_port()
+            interfaces += [
+                ClockInterface(boundary_name(clock), clock,
+                               reset=self.reset_port()),
+                ResetInterface(boundary_name(self.reset_port()),
+                               (self.reset_port(),))]
+        config = self.name(self.TARGET_CONFIG)
+        interfaces.append(BusInterface(
+            boundary_name(self.target_port("o")),
+            (self.target_port("o"), self.target_port("i")), "master",
+            clock=clock,
+            params={"geometry": ApbGeometry(
+                config=config,
+                address_width=self.address_width(),
+                data_bytes=self.bus_width() // 8)},
+            declarations=(Constant(
+                config, "nsl_amba.apb.config_t",
+                Expr.call(self.TARGET_CONFIG_FUNCTION,
+                          str(self.address_width()), str(self.data_width())),
+                comment="The target bus, as the instrument drives it."),)))
+        return tuple(interfaces)
 
     def exported_clocks(self):
         """The target bus's clock, under the name the description gave it."""
@@ -490,6 +524,10 @@ class BusExplorer(InstrumentPlugin):
     @classmethod
     def ports(cls, instrument):
         return cls.explorer(instrument).ports()
+
+    @classmethod
+    def vivado_interfaces(cls, instrument):
+        return cls.explorer(instrument).vivado_interfaces()
 
     @classmethod
     def clocks(cls, instrument):

@@ -1,0 +1,38 @@
+name: zynqmp
+
+# The topcell is a unit of the generated library, so that is the root's
+# library and the root itself holds no source of its own.
+root_library_name: gatecap_generated
+
+root:
+  name: ila_vivado_ip
+  deps:
+    - gatecap_generated.ila_vivado_ip
+
+output:
+  - name: gatecap_axi_ila
+    topcell: ila_vivado_ip
+    target:
+      part: xczu9eg-ffvb1156-2-e
+    backend_config:
+      gbs.builtin.vivado-ip:
+        tool: vivado
+        vendor: gbs
+        library: zynqmp_test
+        name: gatecap_axi_ila
+        version: "1.0"
+        taxonomy: /UserIP
+        display_name: "Gatecap AXI-S to AXI-4 ILA"
+        description: "ILA generated with gatecap for probing AXI-4 with AXI-S interface"
+        supported_families:
+          - zynq
+          - artix7
+          - kintex7
+          - zynquplus
+    outputs:
+      - type: vivado-ip-zip
+        path: gatecap_axi_ila.zip
+
+repositories:
+  - path: simple.yaml
+    loader: gatecap-description

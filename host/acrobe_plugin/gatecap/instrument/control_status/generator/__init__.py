@@ -22,11 +22,13 @@ formal to formal.
 from __future__ import annotations
 
 from acrobe_plugin.gatecap.generator import (Architecture, Assignment, Check,
-                                             ClockDomain, Constant, DesignFile,
-                                             Entity, Expr, Generic, Instance,
+                                             ClockDomain, ClockInterface,
+                                             Constant, DesignFile, Entity,
+                                             Expr, Generic, Instance,
                                              InstrumentPlugin,
                                              InstrumentRegistry, Port,
-                                             SignalDecl)
+                                             ResetInterface, SignalDecl,
+                                             boundary_name)
 from .cdc import PanelCdc
 from .parser import BodyParser
 
@@ -140,6 +142,17 @@ class Panel:
             for tick in word.names:
                 ports.append(Port(self.name(f"{tick}_i"), "in", "std_ulogic"))
         return tuple(ports)
+
+    def vivado_interfaces(self):
+        """The panel's own clock and reset, when it has one. The signals it
+        drives and reads are plain pins of their own."""
+        if self.body.clock is None:
+            return ()
+        return (ClockInterface(boundary_name(self.clock_port()),
+                               self.clock_port(),
+                               reset=self.reset_port()),
+                ResetInterface(boundary_name(self.reset_port()),
+                               (self.reset_port(),)))
 
     def exported_clocks(self):
         """The panel's own clock, under the name the description gave it."""
@@ -467,6 +480,10 @@ class ControlStatus(InstrumentPlugin):
     @classmethod
     def ports(cls, instrument):
         return cls.panel(instrument).ports()
+
+    @classmethod
+    def vivado_interfaces(cls, instrument):
+        return cls.panel(instrument).vivado_interfaces()
 
     @classmethod
     def clocks(cls, instrument):

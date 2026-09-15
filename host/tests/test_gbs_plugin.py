@@ -5,6 +5,7 @@ Run: python3.13 -m pytest host/tests/test_gbs_plugin.py
 
 import asyncio
 import os
+import types
 
 import pytest
 
@@ -75,12 +76,42 @@ def description(tmp_path):
 
 
 @pytest.fixture
+def stream_description(tmp_path):
+    """A description whose whole boundary a Vivado IP can carry."""
+    with open(os.path.join(DESCRIPTIONS, "stream_ip.yaml")) as f:
+        (tmp_path / "description.yaml").write_text(f.read())
+    (tmp_path / "tb.vhd").write_text("-- nothing analysed here\n")
+    return tmp_path / "description.yaml"
+
+
+@pytest.fixture
 def project(description):
     # A BuildStep is an asyncio.Future and wants a loop to attach to.
     loop = asyncio.new_event_loop()
     asyncio.set_event_loop(loop)
     try:
         yield Project(description.parent, description.name)
+    finally:
+        asyncio.set_event_loop(None)
+        loop.close()
+
+
+@pytest.fixture
+def unwrappable_description(tmp_path):
+    """A description whose boundary no Vivado binding can carry: the SPI
+    slave pins are a record of their own, and nothing packs one."""
+    with open(os.path.join(DESCRIPTIONS, "spi_transport.yaml")) as f:
+        (tmp_path / "description.yaml").write_text(f.read())
+    (tmp_path / "tb.vhd").write_text("-- nothing analysed here\n")
+    return tmp_path / "description.yaml"
+
+
+@pytest.fixture
+def stream_project(stream_description):
+    loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(loop)
+    try:
+        yield Project(stream_description.parent, stream_description.name)
     finally:
         asyncio.set_event_loop(None)
         loop.close()
@@ -266,3 +297,75 @@ class TestTask:
         assert "probe_pkg.gbs.yaml" in task.rack.files()
         directory = dispatcher.directory() / "probe_pkg.probe_capture"
         assert not os.path.exists(directory / "probe_pkg.gbs.yaml")
+
+
+class TestVivadoIp:
+    """The wrapper partition: naming it is what asks for the topcell."""
+
+    PACKAGE = f"{LIBRARY}.ip_pkg"
+    WRAPPER = f"{LIBRARY}.ip_capture_vivado_ip"
+
+    def repository(self, description):
+        return GatecapDescriptionLoader(description).load()
+
+    def wanting(self, project, *partitions):
+        """The project as dependency resolution left it, with the partitions
+        it resolved to. The two partitions of a description hold the same
+        file, so this is the only thing telling the dispatcher them apart."""
+        project.context.source_fileset = types.SimpleNamespace(
+            partitions=set(partitions))
+        return project.dispatch()
+
+    def test_the_wrapper_partition_is_named_after_its_topcell(
+            self, stream_description):
+        # The project states that same name as its topcell, so the two cannot
+        # disagree; the rack partition beside it is named after the package.
+        repository = self.repository(stream_description)
+        assert repository.partition_name() == self.PACKAGE
+        assert repository.vivado_ip_partition_name() == self.WRAPPER
+        partition = repository.partition_lookup(self.WRAPPER, {})
+        assert [(s.path, s.file_type) for s in partition.sources] == [
+            (stream_description, "gatecap-description")]
+
+    def test_it_stands_on_the_rack_and_adds_the_packers(self,
+                                                        stream_description):
+        partition = self.repository(stream_description).partition_lookup(
+            self.WRAPPER, {})
+        assert self.PACKAGE in partition.deps
+        assert "nsl_amba.packer" in partition.deps
+
+    def test_a_rack_that_cannot_be_wrapped_still_loads(
+            self, unwrappable_description):
+        # The refusal belongs to the project that asks for the wrapper, not to
+        # every project that loads the description beside it.
+        repository = self.repository(unwrappable_description)
+        partition = repository.partition_lookup(
+            repository.vivado_ip_partition_name(), {})
+        assert partition.deps == {repository.partition_name()}
+
+    def test_the_topcell_is_emitted_only_when_asked_for(self, stream_project):
+        dispatcher = self.wanting(stream_project, self.PACKAGE)
+        generated = stream_project.context.filter_pending(
+            file_type="vhdl", generated_by=dispatcher.name)
+        assert "ip_capture_vivado_ip.vhd" not in [r.path.name
+                                                  for r in generated]
+
+    def test_naming_the_wrapper_partition_emits_it_last(self, stream_project):
+        dispatcher = self.wanting(stream_project, self.PACKAGE, self.WRAPPER)
+        generated = stream_project.context.filter_pending(
+            file_type="vhdl", generated_by=dispatcher.name)
+        assert [r.path.name for r in generated] == [
+            "ip_capture_la.vhd", "ip_pkg.pkg.vhd",
+            "ip_capture_backplane.vhd", "ip_capture.vhd",
+            "ip_capture_vivado_ip.vhd"]
+
+    def test_the_topcell_is_written_with_the_rack(self, stream_project):
+        dispatcher = self.wanting(stream_project, self.PACKAGE, self.WRAPPER)
+        task, = [step for step in stream_project.context.steps
+                 if step.name.startswith("gatecap_generate_")]
+        asyncio.get_event_loop().run_until_complete(task.work())
+
+        directory = dispatcher.directory() / "ip_pkg.ip_capture"
+        written = (directory / "ip_capture_vivado_ip.vhd").read_text()
+        assert "entity ip_capture_vivado_ip is" in written
+        assert "rack: work.ip_pkg.ip_capture" in written

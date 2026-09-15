@@ -89,7 +89,9 @@ async def info(ctx):
 @click.option("-o", "--output", required=True,
               type=click.Path(file_okay=False),
               help="Directory to write the generated core into")
-def generate(description, output):
+@click.option("--vivado-ip", is_flag=True,
+              help="Also emit the topcell a Vivado IP is packaged from")
+def generate(description, output, vivado_ip):
     # No target involved: this reads a file and writes VHDL, so it takes no
     # resource path and resolves no capture tree.
     from .generator import DescriptionParser, DescriptionError, Generator
@@ -102,5 +104,9 @@ def generate(description, output):
     click.echo(f"{description}: rack {parsed.name.dotted()}, "
                f"{len(parsed.instruments)} instrument(s) over "
                f"{parsed.communication.mode}", err=True)
-    for path in core.write(output):
+    try:
+        written = core.write(output, vivado_ip=vivado_ip)
+    except DescriptionError as e:
+        raise click.ClickException(str(e))
+    for path in written:
         click.echo(f"wrote {path}", err=True)

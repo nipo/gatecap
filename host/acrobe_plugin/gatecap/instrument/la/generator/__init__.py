@@ -28,11 +28,13 @@ else's.
 from __future__ import annotations
 
 from acrobe_plugin.gatecap.generator import (Architecture, ClockDomain,
-                                             Constant, DesignFile, Entity,
-                                             Expr, Generic, Instance,
+                                             ClockInterface, Constant,
+                                             DesignFile, Entity, Expr,
+                                             Generic, Instance,
                                              InstrumentPlugin,
                                              InstrumentRegistry, Port,
-                                             RawStatement, SignalDecl)
+                                             RawStatement, ResetInterface,
+                                             SignalDecl, boundary_name)
 from . import signal_types  # noqa: F401 -- registers the stock probe types
 from .clusters import DomainCluster
 from .layout import BlockLayout
@@ -127,6 +129,20 @@ class Analyzer:
             for probe in domain.probes:
                 generics += list(probe.plugin.generics(probe))
         return tuple(generics)
+
+    def vivado_interfaces(self):
+        """Every domain as a Vivado clock and reset pair, with the rate the
+        description states, then whatever the probes of that domain form."""
+        interfaces = []
+        for domain in self.domains:
+            interfaces.append(ClockInterface(
+                boundary_name(domain.clock_port()), domain.clock_port(),
+                frequency=domain.frequency, reset=domain.reset_port()))
+            interfaces.append(ResetInterface(
+                boundary_name(domain.reset_port()), (domain.reset_port(),)))
+            for probe in domain.probes:
+                interfaces += list(probe.plugin.vivado_interfaces(probe))
+        return tuple(interfaces)
 
     def exported_clocks(self):
         """Every domain's clock, under the domain's own name."""
@@ -345,6 +361,10 @@ class LogicAnalyzer(InstrumentPlugin):
     @classmethod
     def generics(cls, instrument):
         return cls.analyzer(instrument).generics()
+
+    @classmethod
+    def vivado_interfaces(cls, instrument):
+        return cls.analyzer(instrument).vivado_interfaces()
 
     @classmethod
     def clocks(cls, instrument):

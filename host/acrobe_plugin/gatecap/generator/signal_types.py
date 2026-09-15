@@ -80,6 +80,13 @@ class SignalTypePlugin:
         return ()
 
     @classmethod
+    def vivado_interfaces(cls, probe):
+        """Vivado interfaces over this probe's port, for a rack packaged as an
+        IP. A probe of a logic type declares nothing: its port crosses as a
+        plain pin."""
+        return ()
+
+    @classmethod
     def length(cls, probe, selection):
         raise NotImplementedError
 

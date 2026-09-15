@@ -15,9 +15,11 @@ typically -- may run on it by naming ``<instance>.<reference>``.
 
 from __future__ import annotations
 
-from acrobe_plugin.gatecap.generator import (Constant, DescriptionError, Expr,
-                                             Field, Instance, InstrumentPlugin,
-                                             InstrumentRegistry, Port)
+from acrobe_plugin.gatecap.generator import (ClockInterface, Constant,
+                                             DescriptionError, Expr, Field,
+                                             Instance, InstrumentPlugin,
+                                             InstrumentRegistry, Port,
+                                             boundary_name)
 
 
 @InstrumentRegistry.register
@@ -127,6 +129,19 @@ class ClockMeasurer(InstrumentPlugin):
                         "and of the descriptor's name list."
                         if index == 0 else None))
         return tuple(ports)
+
+    @classmethod
+    def vivado_interfaces(cls, instrument):
+        """Every clock the instrument watches, the reference with the rate
+        the description states. None of them has a reset."""
+        params = instrument.params
+        reference = instrument.port(f"{params['reference']}_i")
+        interfaces = [ClockInterface(boundary_name(reference), reference,
+                                     frequency=params["frequency"])]
+        for name in params["clocks"]:
+            port = instrument.port(f"{name}_i")
+            interfaces.append(ClockInterface(boundary_name(port), port))
+        return tuple(interfaces)
 
     @classmethod
     def clocks(cls, instrument):

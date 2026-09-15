@@ -166,6 +166,21 @@ class InstrumentPlugin:
         return {}
 
     @classmethod
+    def vivado_interfaces(cls, instrument):
+        """Vivado interfaces over this instance's own boundary ports, for a
+        rack packaged as an IP: the clock and reset of every domain it brings,
+        and whatever bus its ports form. Ports no interface claims become
+        plain pins."""
+        return ()
+
+    @classmethod
+    def vivado_generics(cls, instrument):
+        """Generic name -> what the wrapper puts in its place: a ``Constant``
+        it declares, or a ``Generic`` of its own. A generic with no entry
+        crosses as it stands."""
+        return {}
+
+    @classmethod
     def deps(cls, instrument):
         return ()
 
