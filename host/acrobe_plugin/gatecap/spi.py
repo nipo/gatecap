@@ -7,10 +7,11 @@
     ftdi/.../spi/cs0/gatecap                                    (a USB bridge)
 
 The master is the backend, and the only thing asked of it is
-``Target.transaction(Shift, ...)``: hold the chip select, shift the bytes,
-return what came back on MISO. Nothing here depends on which master that is --
-per-transfer size caps and CS quirks are the master's business -- so a new
-backend is a new SPI interface in acrobe, not a change here.
+``Target.transaction(Shift, ...)``: hold the chip select, shift the bytes, and
+answer with one result per shift, the MISO of a reading one. Nothing here
+depends on which master that is -- per-transfer size caps and CS quirks are the
+master's business -- so a new backend is a new SPI interface in acrobe, not a
+change here.
 
 The wire is SPI-flash shaped, one transaction per chip-select assertion::
 
@@ -182,13 +183,13 @@ class SpiRack(memory.RegisterFromBulk, BackgroundLowering, Batcher,
         head = Shift(self.__command(self.OPCODE_READ, addr)
                      + bytes(self.DUMMY_BYTES), read_miso=False)
         data = Shift(size, read_miso=True)
-        await self.target.transaction(head, data)
-        if data.miso is None or len(data.miso) != size:
+        _, miso = await self.target.transaction(head, data)
+        if miso is None or len(miso) != size * 8:
             raise IOError(
                 f"{self.name}: the master returned "
-                f"{0 if data.miso is None else len(data.miso)} of {size} "
-                f"bytes read at 0x{addr:x}")
-        return bytes(data.miso)
+                f"{0 if miso is None else len(miso)} of {size * 8} "
+                f"bits read at 0x{addr:x}")
+        return bytes(miso)
 
     async def __write_transfer(self, addr, data):
         """One chip-select assertion: opcode, address, then the data. No
@@ -218,13 +219,13 @@ class SpiRack(memory.RegisterFromBulk, BackgroundLowering, Batcher,
                      + bytes(self.DISCOVERY_ADDRESS_BYTES)
                      + bytes(self.DISCOVERY_DUMMY_BYTES), read_miso=False)
         data = Shift(self.DISCOVERY_BYTES, read_miso=True)
-        await self.target.transaction(head, data)
-        if data.miso is None or len(data.miso) != self.DISCOVERY_BYTES:
+        _, miso = await self.target.transaction(head, data)
+        if miso is None or len(miso) != self.DISCOVERY_BYTES * 8:
             raise self.__unanswered(
                 f"the master returned "
-                f"{0 if data.miso is None else len(data.miso)} of "
-                f"{self.DISCOVERY_BYTES} bytes")
-        return bytes(data.miso)
+                f"{0 if miso is None else len(miso)} of "
+                f"{self.DISCOVERY_BYTES * 8} bits")
+        return bytes(miso)
 
     async def discover(self):
         """Read the blob and take the map geometry from it. Everything this

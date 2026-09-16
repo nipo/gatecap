@@ -15,6 +15,7 @@ import asyncio
 import cbor2
 import pytest
 
+from acrobe.bitstring import BitString
 from acrobe.protocol.spi import Shift
 
 from acrobe_plugin.gatecap.spi import SpiDiscoveryError, SpiRack
@@ -36,6 +37,21 @@ DISCOVERY_FILLER = bytes(SpiRack.DISCOVERY_ADDRESS_BYTES
                          + SpiRack.DISCOVERY_DUMMY_BYTES)
 
 
+def answer(shifts, misos):
+    """Resolve a transaction the way a master does: one result per shift, the
+    bits clocked back for a reading shift and None for a write-only one."""
+    results = []
+    for shift, miso in zip(shifts, misos):
+        if not shift.read_miso:
+            assert miso is None, "a write-only shift captures nothing"
+            results.append(None)
+        else:
+            results.append(BitString(miso, len(miso) * 8))
+    future = asyncio.get_running_loop().create_future()
+    future.set_result(tuple(results))
+    return future
+
+
 class FakeTarget:
     """A SPI target answering the way the adapter does: the discovery opcode
     streams the filler and the blob from the byte slot right after it and then
@@ -51,9 +67,10 @@ class FakeTarget:
         self.discovery = blob()
 
     def transaction(self, *shifts):
-        self.transactions.append(b"".join(bytes(shift.mosi)
+        head = self.__mosi(shifts[0])
+        self.transactions.append(b"".join(self.__mosi(shift)
                                           for shift in shifts))
-        head = shifts[0].mosi
+        misos = [None] * len(shifts)
         if head[0] == SpiRack.OPCODE_DISCOVERY:
             assert len(head) == DISCOVERY_HEAD, \
                 "discovery carries the SFDP address and dummy phases"
@@ -63,10 +80,8 @@ class FakeTarget:
             # the data shift starts on the blob itself.
             stream = (b"\x00" + DISCOVERY_FILLER + self.discovery).ljust(
                 len(head) + data.byte_count, b"\x00")
-            data.miso = stream[len(head):len(head) + data.byte_count]
-            future = asyncio.get_running_loop().create_future()
-            future.set_result(shifts)
-            return future
+            misos[1] = stream[len(head):len(head) + data.byte_count]
+            return answer(shifts, misos)
         opcode, addr = head[0], int.from_bytes(head[1:5], "big")
         if opcode == SpiRack.OPCODE_WRITE:
             payload = head[5:]
@@ -77,12 +92,19 @@ class FakeTarget:
             assert opcode == SpiRack.OPCODE_READ, f"opcode {opcode:#x}"
             assert len(head) == 6, "a read carries one turnaround byte"
             data = shifts[1]
-            data.miso = b"".join(
+            misos[1] = b"".join(
                 self.words.get(addr + offset, 0).to_bytes(WORD_BYTES, "little")
                 for offset in range(0, data.byte_count, WORD_BYTES))
-        future = asyncio.get_running_loop().create_future()
-        future.set_result(shifts)
-        return future
+        return answer(shifts, misos)
+
+    @staticmethod
+    def __mosi(shift):
+        """The shift's mosi as the bytes a byte-oriented master clocks out,
+        which is all this wire format ever asks for: a bit-granular shift is
+        what such a master refuses."""
+        if len(shift.mosi) % 8:
+            raise ValueError(f"whole bytes only, got {len(shift.mosi)} bits")
+        return bytes(shift.mosi)
 
     # -- what a test asserts on --
 
@@ -310,12 +332,8 @@ def test_a_short_answer_from_the_master_fails_the_access():
     # gets the failure, never a short or zero-filled buffer.
     async def body(rack, target):
         def short(*shifts):
-            for shift in shifts:
-                if shift.read_miso:
-                    shift.miso = b"\x00"
-            future = asyncio.get_running_loop().create_future()
-            future.set_result(shifts)
-            return future
+            return answer(shifts, [b"\x00" if shift.read_miso else None
+                                   for shift in shifts])
 
         target.transaction = short
         with pytest.raises(IOError):
