@@ -50,8 +50,9 @@ from .vhdl import (Architecture, Assignment, AttributeDecl, AttributeSpec,
                    Instance, Package, PackageBody, Port, Process,
                    RawStatement, SignalDecl)
 from .vivado import (ApbGeometry, BusInterface, ClockInterface, Exposure,
-                     ResetInterface, StreamGeometry, Unbound, VivadoIo,
-                     VivadoIoRegistry, VivadoIpWrapper, boundary_name)
+                     ResetInterface, StreamGeometry, StreamParameters,
+                     StreamShape, Unbound, VivadoIo, VivadoIoRegistry,
+                     VivadoIpWrapper, boundary_name)
 
 
 class Generator:
@@ -79,6 +80,7 @@ __all__ = [
     "Package", "PackageBody", "Port", "Process",
     "RackAssembly", "RawStatement", "ResetInterface",
     "SignalDecl", "SignalTypePlugin", "SignalTypeRegistry", "StreamGeometry",
+    "StreamParameters", "StreamShape",
     "Tagged",
     "Unbound", "VivadoIo", "VivadoIoRegistry", "VivadoIpWrapper",
     "YamlSource",

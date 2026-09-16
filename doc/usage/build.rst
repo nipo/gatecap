@@ -154,6 +154,10 @@ What ends up on the boundary:
   an APB slave (``s_apb``), both packed by ``nsl_amba.packer``;
 * a bus explorer's target bus becomes an APB master of its own, named after
   the instance;
+* a probed ``!axi4-stream`` becomes an AXI4-Stream *monitor* interface named
+  after the probe, packed by ``nsl_amba.packer``'s monitor packer. The core
+  drives nothing on a bus it only watches, so every pin of it is an input,
+  ``TREADY`` included;
 * every bus pin carries a width written as a number. The packager works its
   IP-XACT expressions out of the port clause itself and evaluates no VHDL, so
   a width it cannot read as a literal is a width it refuses; the rack's
@@ -177,20 +181,37 @@ What ends up on the boundary:
   which is what their default assignments are for.
 
 ``burst_length_l2_c`` becomes an IP parameter — the rack has no default for
-it, and a packaged IP needs one — and the stream geometry is fixed by the
-adapter's own contract rather than exposed.
+it, and a packaged IP needs one — and the transport's stream geometry is fixed
+by the adapter's own contract rather than exposed.
+
+A probed bus's geometry is neither: the rack takes it as a ``config_t``
+generic with no default, deliberately, and a block design has nowhere to write
+a record. The IP states it in scalars instead, eight per probe —
+``<probe>_data_bytes``, ``<probe>_id_width``, ``<probe>_dest_width``,
+``<probe>_user_width``, ``<probe>_has_keep``, ``<probe>_has_strobe``,
+``<probe>_has_ready`` and ``<probe>_has_last`` — which the IP's configuration
+panel carries. The pins are sized from them and the ``config_t`` behind them
+is rebuilt from them, so the boundary and the capture cannot disagree.
+``has_ready`` and ``has_last`` default true where the library's own factory
+leaves them off: an observed stream almost always has both, and a selection
+over them would silently lose bits.
+
+Every pin of a probed stream exists whatever those parameters say. A field
+turned off contributes a null range rather than an absent pin, and an optional
+pin carries a default assignment, so a block design leaves open what its bus
+does not have and the IP has one boundary rather than one per geometry.
 
 A port the generator has no way to flatten is refused by name, with the type
 and the types it does know::
 
-   port 'la_control_command_i' of type nsl_amba.axi4_stream.bus_t has no
-   Vivado binding (bound: nsl_amba.axi4_stream.master_t, ...)
+   port 'la_link_command_i' of type nsl_bnoc.framed.framed_bus_t has no
+   Vivado binding (bound: nsl_amba.axi4_stream.bus_t, ...)
 
 That is the state of things today: every transport of loose logic wires
 (``jtag``, ``serial_hdlc``), the two bus transports (``axi4_stream``,
-``apb``), the bus explorer's target bus and every probed vector are packaged;
-a probed record and the ``spi``, ``swd`` and ``usb`` pins are not, for want of
-a packer to flatten them with.
+``apb``), the bus explorer's target bus, every probed vector and a probed
+AXI4-Stream are packaged; a probed bnoc bus and the ``spi``, ``swd`` and
+``usb`` pins are not, for want of a packer to flatten them with.
 
 Outside gbs, ``acrobe gatecap generate --vivado-ip`` writes the topcell beside
 the rack and lists it in the emitted partition manifest.

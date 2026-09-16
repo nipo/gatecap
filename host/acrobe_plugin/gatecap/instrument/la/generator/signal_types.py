@@ -11,9 +11,11 @@ drift from the generator.
 
 from __future__ import annotations
 
-from acrobe_plugin.gatecap.generator import (DescriptionError, Expr, Generic,
+from acrobe_plugin.gatecap.generator import (BusInterface, Constant,
+                                             DescriptionError, Expr, Generic,
                                              Port, SignalTypePlugin,
-                                             SignalTypeRegistry)
+                                             SignalTypeRegistry,
+                                             StreamParameters, boundary_name)
 
 
 @SignalTypeRegistry.register
@@ -140,7 +142,13 @@ class Axi4StreamSignal(ElementSelectedSignal):
     The stream configuration stays out of the description: the entity gains a
     ``config_t`` generic with no default, deliberately, so a mismatch between
     the probed bus and the capture geometry cannot hide behind a default that
-    happens to elaborate."""
+    happens to elaborate.
+
+    A block design has nowhere to write such a generic, so a rack packaged as
+    a Vivado IP states the geometry differently: scalar parameters on the IP,
+    which the pins are sized from and the ``config_t`` is rebuilt from. Both
+    come off :meth:`shape`, so the boundary and the configuration behind it
+    cannot disagree."""
 
     TAG = "!axi4-stream"
     ALPHABET = "idskouvlr"
@@ -158,6 +166,27 @@ class Axi4StreamSignal(ElementSelectedSignal):
     def generics(cls, probe):
         return (Generic(cls.config_generic(probe),
                         "nsl_amba.axi4_stream.config_t"),)
+
+    @classmethod
+    def shape(cls, probe):
+        """The observed bus as a packaged IP parameterises it, under the name
+        its interface takes on the boundary."""
+        return StreamParameters(boundary_name(probe.port_name()))
+
+    @classmethod
+    def vivado_interfaces(cls, probe):
+        return (BusInterface(boundary_name(probe.port_name()),
+                             (probe.port_name(),), "monitor", clock=None,
+                             params={"geometry": cls.shape(probe),
+                                     "config": cls.config_generic(probe)}),)
+
+    @classmethod
+    def vivado_generics(cls, probe):
+        return {cls.config_generic(probe): Constant(
+            cls.config_generic(probe), "nsl_amba.axi4_stream.config_t",
+            cls.shape(probe).config(),
+            comment=f"Bus observed on {probe.name}, as the IP's parameters "
+                    "describe it.")}
 
     @classmethod
     def deps(cls, probe):

@@ -83,8 +83,19 @@ class SignalTypePlugin:
     def vivado_interfaces(cls, probe):
         """Vivado interfaces over this probe's port, for a rack packaged as an
         IP. A probe of a logic type declares nothing: its port crosses as a
-        plain pin."""
+        plain pin.
+
+        The clock is left out: the domain the probe belongs to fills it in,
+        being the only one that knows it."""
         return ()
+
+    @classmethod
+    def vivado_generics(cls, probe):
+        """Generic name -> what the wrapper puts in its place, for the
+        generics :meth:`generics` put on the analyzer. A probe whose geometry
+        the IP parameterises binds its configuration generic to a
+        ``Constant`` built from those parameters."""
+        return {}
 
     @classmethod
     def length(cls, probe, selection):

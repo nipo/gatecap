@@ -11,9 +11,10 @@ import pathlib
 
 import pytest
 
-from acrobe_plugin.gatecap.generator import (DescriptionError,
+from acrobe_plugin.gatecap.generator import (BusInterface, DescriptionError,
                                              DescriptionParser, Port,
-                                             RackAssembly, Unbound,
+                                             RackAssembly, StreamGeometry,
+                                             StreamParameters, Unbound,
                                              VivadoIoRegistry, VivadoIpWrapper)
 
 # A UART with a clock of its own: the host rate is a generic, and no default
@@ -59,6 +60,28 @@ instruments:
   cfg: !bus-explorer
     address-width: 12
     data-width: 32
+"""
+
+
+# A probed bnoc bus: a record the wrapper has no packer for, where a probed
+# AXI4-Stream has one.
+BNOC_PROBE = """
+name: bnoc_pkg.bnoc_capture
+
+communication:
+  mode: apb
+
+instruments:
+  la: !logic-analyzer
+    storage:
+      buffer_depth_l2: 8
+    domains:
+      link:
+        clock: clock
+        frequency: 50_000_000
+        signals:
+          command: !bnoc-framed
+            trigger: vlr
 """
 
 
@@ -267,6 +290,108 @@ def test_the_wrapper_states_the_libraries_it_names_and_no_others():
     assert "rack: work.ip_pkg.ip_capture" in text
 
 
+# A probed stream
+
+
+def test_a_probed_stream_becomes_a_monitor_interface():
+    # The core drives nothing of an observed bus, tready included: what the
+    # two ends answer each other is read and never answered back.
+    text = wrapped("two_domains")
+    assert ('attribute X_INTERFACE_MODE of la_control_command_tdata : signal '
+            'is "monitor slave la_control_command";') in text
+    monitor = [port for port in wrapper("two_domains").ports()
+               if port.name.startswith("la_control_command_t")]
+    assert [port.direction for port in monitor] == ["in"] * 9
+
+
+def test_every_pin_of_a_probed_stream_exists_whatever_its_geometry():
+    # A field the configuration turns off is a null range, not an absent pin,
+    # and an optional pin carries the value a block design that has nothing
+    # to drive it leaves behind.
+    text = wrapped("two_domains")
+    assert ("la_control_command_tdata : in std_logic_vector("
+            "8 * la_control_command_data_bytes - 1 downto 0) "
+            ":= (others => '0');") in text
+    assert ("la_control_command_tuser : in std_logic_vector("
+            "la_control_command_user_width - 1 downto 0) "
+            ":= (others => '0');") in text
+    assert "la_control_command_tvalid : in std_logic := '0';" in text
+    assert "la_control_command_tready : in std_logic := '1';" in text
+
+
+def test_a_probed_stream_states_its_geometry_as_ip_parameters():
+    # The rack takes the geometry as a record with no default, on purpose; a
+    # block design has nowhere to write one, so the IP asks for it in scalars.
+    # ready and last default against the factory: an observed stream almost
+    # always has both, and a selection over them silently loses bits without.
+    generics = [(generic.name, generic.type, generic.default)
+                for generic in wrapper("two_domains").generics]
+    assert generics[0] == ("burst_length_l2_c", "natural", "6")
+    assert generics[1:9] == [
+        ("la_control_command_data_bytes", "natural", "1"),
+        ("la_control_command_id_width", "natural", "0"),
+        ("la_control_command_dest_width", "natural", "0"),
+        ("la_control_command_user_width", "natural", "0"),
+        ("la_control_command_has_keep", "boolean", "false"),
+        ("la_control_command_has_strobe", "boolean", "false"),
+        ("la_control_command_has_ready", "boolean", "true"),
+        ("la_control_command_has_last", "boolean", "true")]
+
+
+def test_the_probes_record_generic_is_rebuilt_from_those_parameters():
+    text = wrapped("two_domains")
+    assert """\
+  constant la_control_command_config_c : nsl_amba.axi4_stream.config_t :=
+    nsl_amba.axi4_stream.config(
+      bytes => la_control_command_data_bytes,
+      id => la_control_command_id_width,
+      dest => la_control_command_dest_width,
+      user => la_control_command_user_width,
+      keep => la_control_command_has_keep,
+      strobe => la_control_command_has_strobe,
+      ready => la_control_command_has_ready,
+      last => la_control_command_has_last);""" in text
+    assert "la_control_command_config_c => la_control_command_config_c" in text
+
+
+def test_a_probed_stream_reaches_the_rack_through_the_monitor_packer():
+    text = wrapped("two_domains")
+    assert """\
+  la_control_command_packer: nsl_amba.packer.axi4_stream_monitor_packer
+    generic map(
+      config_c => la_control_command_config_c
+      )
+    port map(
+      tdata => la_control_command_tdata,""" in text
+    assert "stream_o => la_control_command_s" in text
+    assert "la_control_command_i => la_control_command_s," in text
+
+
+def test_a_probed_stream_is_clocked_by_the_domain_sampling_it():
+    # A probe says what its bus is and not what clocks it; the domain does.
+    assert ('attribute X_INTERFACE_PARAMETER of aclk : signal is '
+            '"ASSOCIATED_BUSIF s_axis:m_axis:la_control_command:'
+            'la_control_response, ASSOCIATED_RESET aresetn, '
+            'FREQ_HZ 25000000";') in wrapped("two_domains")
+
+
+def test_a_whole_stream_bus_declared_as_a_half_is_refused():
+    # bus_t carries both halves, so nothing may drive one of them: an
+    # interface over it is a monitor or it is a mistake.
+    port = Port("probe_i", "in", "nsl_amba.axi4_stream.bus_t")
+    interface = BusInterface("probe", (port.name,), "slave", clock=None,
+                             params={"geometry": StreamParameters("probe"),
+                                     "config": "probe_config_c"})
+    with pytest.raises(DescriptionError) as raised:
+        VivadoIoRegistry.get(port).expose(interface, (port,))
+    assert "only ever a monitor" in str(raised.value)
+
+
+def test_a_fixed_geometry_calls_the_factory_by_its_own_parameter_names():
+    assert StreamGeometry(data_bytes=4, keep=True, strb=True).config() == \
+        "nsl_amba.axi4_stream.config(bytes => 4, keep => true, strobe => true)"
+
+
 # APB
 
 
@@ -336,10 +461,13 @@ def test_a_target_bus_on_the_host_clock_is_clocked_by_it():
 
 
 def test_a_record_port_with_no_binding_is_refused_by_name():
-    message = refusal("two_domains")
-    assert "la_control_command_i" in message
-    assert "nsl_amba.axi4_stream.bus_t has no Vivado binding" in message
-    assert "nsl_amba.axi4_stream.master_t" in message
+    rack = RackAssembly(DescriptionParser.load(BNOC_PROBE))
+    with pytest.raises(DescriptionError) as raised:
+        rack.vivado_files()
+    message = str(raised.value)
+    assert "la_link_command_i" in message
+    assert "nsl_bnoc.framed.framed_bus_t has no Vivado binding" in message
+    assert "nsl_amba.axi4_stream.bus_t" in message
 
 
 def test_a_transport_with_no_binding_is_refused_too():

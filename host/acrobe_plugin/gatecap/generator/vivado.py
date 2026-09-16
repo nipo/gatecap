@@ -31,11 +31,13 @@ from dataclasses import dataclass, field, replace
 from .errors import DescriptionError
 from .checks import Check
 from .vhdl import (Architecture, AttributeDecl, AttributeSpec, Constant,
-                   DesignFile, Entity, Group, Instance, Port, SignalDecl)
+                   DesignFile, Entity, Expr, Generic, Group, Instance, Port,
+                   SignalDecl)
 
-# The two attributes Vivado's packager reads off a port.
+# The attributes Vivado's packager reads off a port.
 INFO = "X_INTERFACE_INFO"
 PARAMETER = "X_INTERFACE_PARAMETER"
+MODE = "X_INTERFACE_MODE"
 
 
 def boundary_name(port):
@@ -67,7 +69,9 @@ class BusInterface:
 
     name: str      # boundary prefix, and the interface's name in Vivado
     ports: tuple   # rack port names forming it
-    mode: str      # "slave" or "master", from the rack's point of view
+    # "slave" or "master" from the rack's point of view, or "monitor" for a
+    # bus it only watches, which has no half of its own to take a side from.
+    mode: str
     clock: str | None  # rack port of the clock it runs on, None for the host's
     params: dict = field(default_factory=dict)  # what the binding reads
     # Constants the wrapper declares for this interface, for a geometry the
@@ -116,6 +120,7 @@ class Exposure:
     """One interface, turned into wrapper boundary and wrapper innards."""
 
     ports: tuple = ()          # flat Port on the wrapper boundary
+    generics: tuple = ()       # Generic the boundary is sized from
     attributes: tuple = ()     # AttributeSpec over those ports
     declarations: tuple = ()   # Constant / SignalDecl the glue needs
     statements: tuple = ()     # the packer instances
@@ -190,8 +195,43 @@ class ScalarIo(VivadoIo):
         return Exposure(ports=(port,), bindings={port.name: port.name})
 
 
+class StreamShape:
+    """What an AXI4-Stream boundary carries, and what the packer behind it is
+    configured with.
+
+    Two shapes answer it, and a binding holding one cannot tell which.
+    :class:`StreamGeometry` answers in numbers, for a stream whose geometry is
+    the core's own contract; :class:`StreamParameters` answers in the names of
+    generics it puts on the wrapper, for one the instantiating design settles
+    in the IP's configuration panel."""
+
+    SCALAR = "std_logic"
+
+    @staticmethod
+    def vector(high):
+        """A boundary vector down to zero. ``high`` is an expression, so a
+        shape of generics names them here and the packager reads the width off
+        the port clause without elaborating anything."""
+        return f"std_logic_vector({high} downto 0)"
+
+    def config(self):
+        """The ``nsl_amba.axi4_stream.config`` call building the packer's
+        configuration."""
+        raise NotImplementedError
+
+    def signals(self):
+        """Logical signal name -> (boundary type, default value or None), in
+        the order the wrapper declares them. ``tready`` is not among them: it
+        runs against the channel, so which way it faces is the binding's."""
+        raise NotImplementedError
+
+    def generics(self):
+        """Generics the wrapper declares for this shape to read."""
+        return ()
+
+
 @dataclass(frozen=True)
-class StreamGeometry:
+class StreamGeometry(StreamShape):
     """An AXI4-Stream boundary as the wrapper fixes it. Presence is part of
     the wrapper's shape, so it is stated here rather than read back from a
     generic: a pin cannot appear and disappear with a parameter."""
@@ -205,35 +245,96 @@ class StreamGeometry:
     strb: bool = False
 
     def config(self):
-        """The ``nsl_amba.axi4_stream.config`` call building it."""
         arguments = [f"bytes => {self.data_bytes}"]
         for name, width in (("id", self.id_width), ("dest", self.dest_width),
                             ("user", self.user_width)):
             if width:
                 arguments.append(f"{name} => {width}")
         for name, present in (("last", self.last), ("keep", self.keep),
-                              ("strb", self.strb)):
+                              ("strobe", self.strb)):
             if present:
                 arguments.append(f"{name} => true")
         return f"nsl_amba.axi4_stream.config({', '.join(arguments)})"
 
     def signals(self):
-        """Logical signal name -> width in bits, None for a scalar, in the
-        order the wrapper declares them."""
-        signals = {"tdata": 8 * self.data_bytes}
+        signals = {"tdata": (self.vector(8 * self.data_bytes - 1), None)}
         if self.strb:
-            signals["tstrb"] = self.data_bytes
+            signals["tstrb"] = (self.vector(self.data_bytes - 1), None)
         if self.keep:
-            signals["tkeep"] = self.data_bytes
+            signals["tkeep"] = (self.vector(self.data_bytes - 1), None)
         if self.last:
-            signals["tlast"] = None
+            signals["tlast"] = (self.SCALAR, None)
         for name, width in (("tid", self.id_width),
                             ("tdest", self.dest_width),
                             ("tuser", self.user_width)):
             if width:
-                signals[name] = width
-        signals["tvalid"] = None
+                signals[name] = (self.vector(width - 1), None)
+        signals["tvalid"] = (self.SCALAR, None)
         return signals
+
+
+@dataclass(frozen=True)
+class StreamParameters(StreamShape):
+    """An AXI4-Stream boundary the instantiating design settles, from generics
+    the IP's configuration panel carries.
+
+    Every pin exists whatever the panel says: a field turned off is a null
+    range, and an optional pin carries a default so a block design may leave
+    it open. The boundary is therefore one boundary, and what the parameters
+    change is how much of it means anything."""
+
+    prefix: str
+
+    # Parameter, its type, the default the panel opens on, and what it says.
+    # An observed stream almost always has both handshake lines, so those two
+    # default against the factory's own.
+    PARAMETERS = (
+        ("data_bytes", "natural", "1", "Bytes per beat of the bus observed."),
+        ("id_width", "natural", "0", "TID bits, 0 for a bus without one."),
+        ("dest_width", "natural", "0", "TDEST bits, 0 for a bus without one."),
+        ("user_width", "natural", "0", "TUSER bits, 0 for a bus without one."),
+        ("has_keep", "boolean", "false", "Whether TKEEP means anything."),
+        ("has_strobe", "boolean", "false", "Whether TSTRB means anything."),
+        ("has_ready", "boolean", "true", "Whether TREADY means anything."),
+        ("has_last", "boolean", "true", "Whether TLAST means anything."),
+        )
+
+    def name(self, parameter):
+        return f"{self.prefix}_{parameter}"
+
+    def generics(self):
+        return tuple(Generic(self.name(parameter), type_name, default,
+                             comment=comment)
+                     for parameter, type_name, default, comment
+                     in self.PARAMETERS)
+
+    def config(self):
+        return Expr.wrapped_call(
+            "nsl_amba.axi4_stream.config",
+            bytes=self.name("data_bytes"),
+            id=self.name("id_width"),
+            dest=self.name("dest_width"),
+            user=self.name("user_width"),
+            keep=self.name("has_keep"),
+            strobe=self.name("has_strobe"),
+            ready=self.name("has_ready"),
+            last=self.name("has_last"))
+
+    def signals(self):
+        data = self.name("data_bytes")
+        return {
+            "tdata": (self.vector(f"8 * {data} - 1"), "(others => '0')"),
+            "tstrb": (self.vector(f"{data} - 1"), "(others => '1')"),
+            "tkeep": (self.vector(f"{data} - 1"), "(others => '1')"),
+            "tlast": (self.SCALAR, "'1'"),
+            "tid": (self.vector(f"{self.name('id_width')} - 1"),
+                    "(others => '0')"),
+            "tdest": (self.vector(f"{self.name('dest_width')} - 1"),
+                      "(others => '0')"),
+            "tuser": (self.vector(f"{self.name('user_width')} - 1"),
+                      "(others => '0')"),
+            "tvalid": (self.SCALAR, "'0'"),
+            }
 
 
 @VivadoIoRegistry.register
@@ -269,12 +370,12 @@ class Axi4StreamIo(VivadoIo):
         forward = "in" if mode == "slave" else "out"
         backward = "out" if mode == "slave" else "in"
         boundary, port_map = [], {}
-        for name, width in geometry.signals().items():
+        for name, (kind, default) in geometry.signals().items():
             pin = f"{interface.name}_{name}"
-            boundary.append(Port(pin, forward, cls.__type(width)))
+            boundary.append(Port(pin, forward, kind, default=default))
             port_map[name] = pin
         ready = f"{interface.name}_{cls.READY}"
-        boundary.append(Port(ready, backward, "std_logic"))
+        boundary.append(Port(ready, backward, geometry.SCALAR))
         port_map[cls.READY] = ready
 
         signal = f"{interface.name}_s"
@@ -285,6 +386,7 @@ class Axi4StreamIo(VivadoIo):
 
         return Exposure(
             ports=tuple(boundary),
+            generics=geometry.generics(),
             attributes=tuple(
                 AttributeSpec(INFO, port.name,
                               f"{cls.BUS} {interface.name} "
@@ -312,11 +414,76 @@ class Axi4StreamIo(VivadoIo):
                 "nsl_amba.axi4_stream.master_t port and one slave_t, got "
                 + ", ".join(f"{p.name}: {p.type}" for p in ports)) from None
 
-    @staticmethod
-    def __type(width):
-        if width is None:
-            return "std_logic"
-        return f"std_logic_vector({width - 1} downto 0)"
+
+@VivadoIoRegistry.register
+class Axi4StreamMonitorIo(VivadoIo):
+    """A probed AXI4-Stream: the whole ``bus_t`` of a bus the rack watches and
+    never drives.
+
+    Every pin is an input, ``tready`` included -- what the two ends answer
+    each other is observed, and nothing of it is answered back -- which is an
+    IP-XACT monitor interface, and what ``X_INTERFACE_MODE`` states beside the
+    usual attributes. The geometry is the observed bus's, not the core's, so
+    it is a shape of generics: the pins are sized from them and the
+    ``config_t`` the packer takes is built from the same ones."""
+
+    TYPES = ("nsl_amba.axi4_stream.bus_t",)
+    BUS = "xilinx.com:interface:axis:1.0"
+    DEPS = ("nsl_amba.packer",)
+    PACKER = "nsl_amba.packer.axi4_stream_monitor_packer"
+    # IP-XACT carries a monitor as a mode of its own, over one of the two
+    # roles: the two are the tokens ``X_INTERFACE_MODE`` states before the
+    # interface's name.
+    ROLE = "monitor"
+    MONITORED = "slave"
+    READY = "tready"
+
+    @classmethod
+    def expose(cls, interface, ports):
+        port, = ports
+        if interface.mode != cls.ROLE:
+            raise DescriptionError(
+                f"interface {interface.name!r} is declared {interface.mode} "
+                f"over {port.name!r}, which is a whole AXI4-Stream bus: "
+                "nothing drives half of one, so it is only ever a monitor")
+        if port.direction != "in":
+            raise DescriptionError(
+                f"interface {interface.name!r} monitors port {port.name!r}, "
+                f"which is {port.direction}: a monitored bus is only read")
+        shape = interface.params["geometry"]
+
+        boundary, port_map = [], {}
+        for name, (kind, default) in shape.signals().items():
+            pin = f"{interface.name}_{name}"
+            boundary.append(Port(pin, "in", kind, default=default))
+            port_map[name] = pin
+        ready = f"{interface.name}_{cls.READY}"
+        boundary.append(Port(ready, "in", shape.SCALAR, default="'1'"))
+        port_map[cls.READY] = ready
+
+        signal = f"{interface.name}_s"
+        port_map["stream_o"] = signal
+
+        attributes = [
+            AttributeSpec(INFO, pin.name,
+                          f"{cls.BUS} {interface.name} "
+                          f"{pin.name[len(interface.name) + 1:].upper()}")
+            for pin in boundary]
+        attributes.append(AttributeSpec(
+            MODE, boundary[0].name,
+            f"{cls.ROLE} {cls.MONITORED} {interface.name}"))
+
+        return Exposure(
+            ports=tuple(boundary),
+            generics=shape.generics(),
+            attributes=tuple(attributes),
+            declarations=(SignalDecl(signal, cls.TYPES[0]),),
+            statements=(Instance(f"{interface.name}_packer", cls.PACKER,
+                                 generic_map={
+                                     "config_c": interface.params["config"]},
+                                 port_map=port_map),),
+            bindings={port.name: signal},
+            deps=cls.DEPS)
 
 
 @dataclass(frozen=True)
@@ -746,7 +913,20 @@ class VivadoIpWrapper:
                     "IP would have a parameter with no value")
             generics.append(replacement)
             generic_map[generic.name] = replacement.name
-        return tuple(generics), generic_map, tuple(constants)
+        return (tuple(generics) + self.__boundary_generics(),
+                generic_map, tuple(constants))
+
+    def __boundary_generics(self):
+        """Generics a binding put on the entity for a boundary it sizes
+        itself, in exposure order.
+
+        They are the wrapper's alone: the rack has never heard of them, and
+        what the rack does take is the constant the plugin built out of
+        them."""
+        generics = []
+        for exposure in self.exposures:
+            generics += list(exposure.generics)
+        return tuple(generics)
 
     SCALARS = ("natural", "positive", "integer", "boolean", "string", "real")
 
@@ -819,12 +999,16 @@ class VivadoIpWrapper:
             "per record interface and the rack itself; nothing of the rack's "
             "own geometry is settled here."])
 
+    ATTRIBUTES = (INFO, PARAMETER, MODE)
+
     def declarations(self):
-        attributes = [AttributeDecl(INFO), AttributeDecl(PARAMETER)]
         specifications, declarations = [], []
         for exposure in self.exposures:
             specifications += list(exposure.attributes)
             declarations += list(exposure.declarations)
+        specified = {spec.attribute for spec in specifications}
+        attributes = [AttributeDecl(name) for name in self.ATTRIBUTES
+                      if name in specified]
         constants = list(self.constants)
         for bus in self.buses:
             constants += list(bus.declarations)

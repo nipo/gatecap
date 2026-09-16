@@ -1,0 +1,24 @@
+name: zynqmp.stream_stream
+
+communication:
+  mode: axi4_stream
+  clock: la.main
+
+instruments:
+  la: !logic-analyzer
+    storage:
+      buffer_depth_l2: 10
+
+    trigger:
+      capabilities: value
+
+    domains:
+      main:
+        clock: clock
+        frequency: 100_000_000
+
+        signals:
+          rx: !axi4-stream
+            trigger: vlr
+          tx: !axi4-stream
+            trigger: vlr

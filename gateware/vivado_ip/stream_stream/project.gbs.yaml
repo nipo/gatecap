@@ -1,0 +1,38 @@
+name: stream_stream
+
+# The topcell is a unit of the generated library, so that is the root's
+# library and the root itself holds no source of its own.
+root_library_name: gatecap_generated
+
+root:
+  name: stream_stream_vivado_ip
+  deps:
+    - gatecap_generated.stream_stream_vivado_ip
+
+output:
+  - name: gatecap_stream_stream
+    topcell: stream_stream_vivado_ip
+    target:
+      part: xczu9eg-ffvb1156-2-e
+    backend_config:
+      gbs.builtin.vivado-ip:
+        tool: vivado
+        vendor: gbs
+        library: zynqmp_test
+        name: gatecap_stream_stream
+        version: "1.0"
+        taxonomy: /UserIP
+        display_name: "Gatecap AXI-Stream AXI-Stream ILA"
+        description: "Gatecap capture txo AXI-Streams with AXI-Stream backend"
+        supported_families:
+          - zynq
+          - artix7
+          - kintex7
+          - zynquplus
+    outputs:
+      - type: vivado-ip-zip
+        path: gatecap_stream_stream.zip
+
+repositories:
+  - path: simple.yaml
+    loader: gatecap-description

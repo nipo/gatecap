@@ -803,6 +803,13 @@ description states and the reset of the same domain) and ``ResetInterface``
 are one reset become one pin). ``ASSOCIATED_BUSIF`` is derived from the
 clocks the buses name, not declared.
 
+A bus interface's mode is ``"slave"`` or ``"master"`` from the rack's point of
+view, or ``"monitor"`` for one the rack only watches. A monitor has all its
+pins in, whatever the bus's own directions are, and its binding says so with
+an ``X_INTERFACE_MODE`` attribute beside the usual ones; that is what a probed
+AXI4-Stream is. A probe declares no clock: the domain sampling it fills that
+in, being the only one that knows it.
+
 ``Unbound`` is the fourth, and the only one that takes pins away: it names
 ports the boundary leaves out, which the rack then takes ``open``. That is for
 a port a vendor primitive already answers for -- the TAP pins on Xilinx, where
@@ -811,11 +818,17 @@ named there must have a default, or nothing would drive it.
 
 A generic is the last thing to say: a scalar crosses as an IP parameter and
 must have a default, and a record cannot cross at all. ``vivado_generics``
-on the transport and instrument bases maps a generic name to what the wrapper
-puts in its place — a ``Constant`` it declares, or a ``Generic`` of its own
-carrying the default the rack has no business fixing. The stream transport
-fixes its ``config_t`` that way, its geometry being the adapter's contract
-rather than the design's choice.
+on all three plugin bases maps a generic name to what the wrapper puts in its
+place — a ``Constant`` it declares, or a ``Generic`` of its own carrying the
+default the rack has no business fixing. The stream transport fixes its
+``config_t`` that way, its geometry being the adapter's contract rather than
+the design's choice.
+
+An ``Exposure`` may also carry ``generics`` of its own, for a boundary whose
+geometry the instantiating design settles rather than the core: they land on
+the wrapper entity, the pins are sized from them, and a ``Constant`` built
+from the same ones is what the rack's record generic is bound to. A probed
+AXI4-Stream is packaged that way, its geometry being the observed bus's.
 
 Instruments, keyed by tag
 ~~~~~~~~~~~~~~~~~~~~~~~~~
