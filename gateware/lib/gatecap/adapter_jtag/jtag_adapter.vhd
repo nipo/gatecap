@@ -49,6 +49,13 @@ begin
   -- rack is reset with the rest of the design, not by a debugger touching the
   -- chain.
   tap: nsl_jtag.continuous_transport.jtag_continuous_transport_tap
+    generic map(
+      -- Named in gatecap's own space, manufacturer 0x6ff (JEP106 bank
+      -- 13, code 0x7f, never assigned), where type 0x01 is a continuous
+      -- transport carrying a rack.
+      node_vendor_c => 16#6ff#,
+      node_type_c => 16#01#
+      )
     port map(
       chip_tck_i => chip_tck_i,
       chip_tms_i => chip_tms_i,

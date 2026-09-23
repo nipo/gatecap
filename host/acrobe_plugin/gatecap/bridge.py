@@ -19,12 +19,15 @@ import cbor2
 
 from uuid import UUID
 from acrobe.engine import Batcher
-from acrobe.db import Db
+from acrobe.db import Db, NoMatch
 from acrobe.node import Node
 from acrobe.protocol import memory
 from acrobe.protocol.datagram import Datagram
 from acrobe.component.arm.ap import Ap
 from acrobe.component.arm.mem_ap import MemAp
+from acrobe.part_id import PartId
+from acrobe.component.altera.sld_hub import SldHub, SldNodeInfo
+from acrobe.component.nsl.jtag_continuous_transport import ContinuousTransport
 
 from .enumerator import MemoryMappedEnumerator
 
@@ -272,3 +275,19 @@ class MemApBridge(MemAp):
         enumerator = MemoryMappedEnumerator(self, base = self.__base,
                                             name = "enumerator")
         self.child_add(enumerator)
+
+def gatecap_part_id(type_id: int) -> PartId:
+    """An SLD node identity in gatecap's space: JEP106 bank 13, code 0x7f,
+    a code JEP106 never assigns."""
+    return PartId(jep106_bank = 0xd, jep106_id = 0x7f, part_no = type_id)
+
+
+# A continuous transport carrying a rack.
+@SldHub.db.register(gatecap_part_id(0x01))
+def _gatecap_continuous_transport(hub: SldHub, info: SldNodeInfo):
+    transport = ContinuousTransport(
+        hub.tap, hub.instruction(info, 0),
+        name = f"continuous_transport{info.instance}")
+    gc = GatecapFramed(transport)
+    transport.child_add(gc)
+    return transport
