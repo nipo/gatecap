@@ -136,6 +136,8 @@ begin
     head_o <= (others => '0');
     complete := false;
     head_off := r.head_offset;
+    back := r.pre_trigger_len + trigger_latency_c;
+    post_total := r.capture_len - r.pre_trigger_len;
 
     case r.state is
       when ST_IDLE =>
@@ -161,12 +163,10 @@ begin
         end if;
         -- Accumulate enough history to back-date the trigger sample and
         -- still keep its pre-trigger window.
-        back := r.pre_trigger_len + trigger_latency_c;
         if r.pre_count < back then
           rin.pre_count <= r.pre_count + 1;
         end if;
 
-        post_total := r.capture_len - r.pre_trigger_len;
         -- Oldest kept sample sits `back` behind the current sample.
         if r.offset >= back then
           head_off := r.offset - back;
