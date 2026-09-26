@@ -9,6 +9,7 @@ from gbs.base import BaseDispatcher
 from gbs.build.task import BuildError, ResourceTypology
 from gbs.ui.messages import MessageSeverity
 
+from .extensions import Extensions
 from .repository import GatecapDescriptionRepository
 from .task import GatecapGenerateTask
 
@@ -77,6 +78,7 @@ class GatecapGenerateDispatcher(BaseDispatcher):
             from acrobe_plugin.gatecap.generator import (DescriptionError,
                                                          DescriptionParser,
                                                          Generator)
+            Extensions.load()
         except ImportError as e:
             raise BuildError(
                 f"a gatecap description needs the gatecap host package: {e}"

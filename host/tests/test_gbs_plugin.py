@@ -17,6 +17,7 @@ from gbs.repository.loader import LoadError
 from gbs.plugin.gatecap import (GatecapBackend, GatecapGeneratePass,
                                 GatecapPlugin, gbs_register)
 from gbs.plugin.gatecap.dispatcher import GatecapGenerateDispatcher
+from gbs.plugin.gatecap.extensions import Extensions
 from gbs.plugin.gatecap.repository import (GatecapDescriptionLoader,
                                            GatecapDescriptionRepository)
 
@@ -200,6 +201,23 @@ class TestRepository:
         # It is a source of the build; the two typologies would collide on
         # the same path.
         assert self.repository(description).definition_files == []
+
+    def test_extensions_are_loaded_first(self, tmp_path, monkeypatch):
+        # An extension registers its instruments by being imported, and a
+        # description may name one: loading a description imports them.
+        package = tmp_path / "acrobe_plugin" / "gatecap_extension_probe"
+        package.mkdir(parents=True)
+        (package / "__init__.py").write_text(
+            "import sys\nsys.gatecap_extension_probe = True\n")
+        monkeypatch.syspath_prepend(str(tmp_path))
+        monkeypatch.setattr(Extensions, "loaded", False)
+        monkeypatch.delattr("sys.gatecap_extension_probe", raising=False)
+
+        GatecapDescriptionLoader(
+            os.path.join(DESCRIPTIONS, "single_domain.yaml")).load()
+
+        import sys
+        assert getattr(sys, "gatecap_extension_probe", False)
 
     def test_a_missing_description_names_itself(self, tmp_path):
         with pytest.raises(LoadError) as raised:

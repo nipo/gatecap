@@ -39,6 +39,8 @@ from pathlib import Path
 from gbs.repository.loader import LoadError, RepositoryLoader
 from gbs.repository.model import Partition, Repository, SourceFile
 
+from .extensions import Extensions
+
 
 class GatecapDescriptionRepository(Repository):
     """The one library one partition a description amounts to."""
@@ -130,6 +132,7 @@ class GatecapDescriptionLoader(RepositoryLoader):
             from acrobe_plugin.gatecap.generator import (DescriptionError,
                                                          DescriptionParser,
                                                          Generator)
+            Extensions.load()
         except ImportError as e:
             raise LoadError(
                 f"{self.path}: a gatecap description needs the gatecap host "
