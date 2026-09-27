@@ -2,8 +2,9 @@ library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 
-library nsl_amba, nsl_math, nsl_synthesis, gatecap;
+library nsl_amba, nsl_data, nsl_math, nsl_synthesis, gatecap;
 use nsl_amba.apb.all;
+use nsl_data.endian.all;
 use nsl_math.int_ext.all;
 use gatecap.control_status.all;
 
@@ -15,6 +16,11 @@ use gatecap.control_status.all;
 -- the contract and the register map).
 --
 -- The host clock may stop between accesses; nothing here needs it to run.
+--
+-- Reads take one wait state: the register number is registered at the
+-- end of the setup phase, and the value it selects at the end of the
+-- first access cycle, so nothing on the bus sees the read multiplexer
+-- combinationally.
 entity control_status_shell is
   generic (
     apb_config_c : config_t;
@@ -95,9 +101,21 @@ architecture rtl of control_status_shell is
     and panel_widths_legal(tick_out_count_c)
     and panel_widths_legal(tick_in_count_c);
 
+  signal address_s : unsigned(apb_config_c.address_width-1
+                              downto apb_config_c.data_bus_width_l2);
+  signal w_data_s, r_data_s
+    : nsl_data.bytestream.byte_string(0 to 2**apb_config_c.data_bus_width_l2-1);
+  signal w_mask_s : std_ulogic_vector(0 to 2**apb_config_c.data_bus_width_l2-1);
+  signal w_error_s : std_ulogic;
   signal reg_no_s : integer range 0 to 2**reg_count_l2_c-1;
   signal w_value_s : unsigned(word_bits_c-1 downto 0);
   signal w_strobe_s : std_ulogic;
+  signal r_valid_s : std_ulogic;
+
+  -- The read side: register number and access phase as they were last
+  -- cycle, and the value the former selects.
+  signal read_reg_no_s : integer range 0 to 2**reg_count_l2_c-1;
+  signal read_accessing_s : boolean;
   signal r_value_s : unsigned(word_bits_c-1 downto 0);
 
   signal control_s : panel_word_vector(0 to control_count_c-1);
@@ -158,10 +176,11 @@ begin
       unused_i => '0'
       );
 
-  regmap: nsl_amba.apb.apb_regmap
+  -- Writes are taken in the setup phase, whole words only.  Reads are
+  -- served in the second access cycle, from r_value_s.
+  slave: nsl_amba.apb.apb_slave
     generic map(
-      config_c => apb_config_c,
-      reg_count_l2_c => reg_count_l2_c
+      config_c => apb_config_c
       )
     port map(
       clock_i => clock_i,
@@ -170,12 +189,25 @@ begin
       apb_i => apb_i,
       apb_o => apb_o,
 
-      reg_no_o => reg_no_s,
-      w_value_o => w_value_s,
-      w_strobe_o => w_strobe_s,
-      r_value_i => r_value_s,
-      r_strobe_o => open
+      address_o => address_s,
+      w_data_o => w_data_s,
+      w_mask_o => w_mask_s,
+      w_valid_o => w_strobe_s,
+      w_error_i => w_error_s,
+      w_ready_i => '1',
+
+      r_data_i => r_data_s,
+      r_ready_o => open,
+      r_valid_i => r_valid_s
       );
+
+  reg_no_s <= to_integer(address_s(address_s'right+reg_count_l2_c-1
+                                   downto address_s'right));
+  w_error_s <= '1' when w_mask_s /= (w_mask_s'range => '1') else '0';
+  w_value_s <= from_endian(w_data_s, ENDIAN_LITTLE);
+  r_data_s <= to_endian(r_value_s, ENDIAN_LITTLE);
+  r_valid_s <= '1' when read_accessing_s and is_access(apb_config_c, apb_i)
+               else '0';
 
   -- One write touches one word of one mask; the other words of that mask are
   -- cleared in the same cycle, so the single strobe crossing to the core can
@@ -237,42 +269,55 @@ begin
     end if;
   end process;
 
-  read_mux: process(reg_no_s, control_s, status_i, sticky_i, counter_i,
-                    counter_base_s)
-    variable value : unsigned(31 downto 0);
+  read_regs: process(clock_i, reset_n_i)
   begin
-    value := (others => '0');
-
-    if reg_no_s = REG_FINGERPRINT_C then
-      value := fingerprint_c;
+    if rising_edge(clock_i) then
+      read_reg_no_s <= reg_no_s;
+      read_accessing_s <= is_access(apb_config_c, apb_i);
     end if;
 
-    for g in 0 to tick_in_words_c-1 loop
-      if reg_no_s = REG_STICKY_C + g then
-        value := unsigned(sticky_i(g));
-      end if;
-    end loop;
+    if reset_n_i = '0' then
+      read_accessing_s <= false;
+    end if;
+  end process;
 
-    for k in 0 to status_count_c-1 loop
-      if reg_no_s = REG_STATUS_IN_C + k then
-        value := unsigned(status_i(k));
-      end if;
-    end loop;
+  read_mux: process(clock_i)
+    variable value : unsigned(31 downto 0);
+  begin
+    if rising_edge(clock_i) then
+      value := (others => '0');
 
-    for i in 0 to counter_count_c-1 loop
-      if reg_no_s = REG_COUNTER_C + i then
-        value := resize(unsigned(counter_i(i)(tick_counter_width_c-1 downto 0))
-                        - counter_base_s(i), 32);
+      if read_reg_no_s = REG_FINGERPRINT_C then
+        value := fingerprint_c;
       end if;
-    end loop;
 
-    for k in 0 to control_count_c-1 loop
-      if reg_no_s = REG_CONTROL_C + k then
-        value := unsigned(control_s(k));
-      end if;
-    end loop;
+      for g in 0 to tick_in_words_c-1 loop
+        if read_reg_no_s = REG_STICKY_C + g then
+          value := unsigned(sticky_i(g));
+        end if;
+      end loop;
 
-    r_value_s <= resize(value, word_bits_c);
+      for k in 0 to status_count_c-1 loop
+        if read_reg_no_s = REG_STATUS_IN_C + k then
+          value := unsigned(status_i(k));
+        end if;
+      end loop;
+
+      for i in 0 to counter_count_c-1 loop
+        if read_reg_no_s = REG_COUNTER_C + i then
+          value := resize(unsigned(counter_i(i)(tick_counter_width_c-1 downto 0))
+                          - counter_base_s(i), 32);
+        end if;
+      end loop;
+
+      for k in 0 to control_count_c-1 loop
+        if read_reg_no_s = REG_CONTROL_C + k then
+          value := unsigned(control_s(k));
+        end if;
+      end loop;
+
+      r_value_s <= resize(value, word_bits_c);
+    end if;
   end process;
 
   control_o <= control_s;

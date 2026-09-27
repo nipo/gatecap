@@ -6,5 +6,7 @@ sources:
       - control_status_core.vhd
 deps:
   - nsl_amba.apb
+  - nsl_data.bytestream
+  - nsl_data.endian
   - nsl_math.int_ext
   - nsl_synthesis.assertion
