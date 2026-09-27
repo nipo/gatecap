@@ -102,6 +102,11 @@ class InstrumentPlugin:
         return {}
 
     @classmethod
+    def check(cls, instrument, description):
+        """Refuse, with a DescriptionError, an instance that does not fit the
+        rest of the description, once every instrument is parsed."""
+
+    @classmethod
     def ports(cls, instrument):
         """Rack-boundary ports this instance adds, named after it."""
         raise NotImplementedError

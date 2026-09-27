@@ -50,6 +50,8 @@ class DescriptionParser:
         description = Description(name=name, communication=communication,
                                   instruments=instruments)
         cls.__check_ports(description)
+        for instrument in description.instruments:
+            instrument.plugin.check(instrument, description)
         return description
 
     @classmethod

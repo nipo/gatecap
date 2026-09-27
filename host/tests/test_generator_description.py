@@ -567,3 +567,18 @@ def test_error_carries_path_and_line():
     error = raised.value
     assert error.path == "instruments.la.domains.d.signals.a"
     assert error.line == 11
+
+
+def test_instruments_check_the_whole_description(monkeypatch):
+    plugin = DescriptionParser.load(REFERENCE).instruments[0].plugin
+    seen = []
+
+    def check(instrument, description):
+        seen.append((instrument.name, description.name.entity))
+        raise DescriptionError("refused by the plugin",
+                               f"instruments.{instrument.name}")
+
+    monkeypatch.setattr(plugin, "check", staticmethod(check))
+    with pytest.raises(DescriptionError, match="refused by the plugin"):
+        DescriptionParser.load(REFERENCE)
+    assert seen == [("la", "my_capture")]
