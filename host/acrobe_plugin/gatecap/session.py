@@ -64,7 +64,9 @@ class Session:
         handle. The top adapter/broker is left in place: it is
         enumerator-populated (populate runs once, at hw-root start), so
         re-summoning through it needs no rescan; only the transport and what
-        sits on it (framing, the capture blocks) are rebuilt."""
+        sits on it (framing, the capture blocks) are rebuilt. When the transport
+        was the adapter's last child, removing it also releases the adapter's
+        device session, reopened on the next summon."""
         hw_root = get_hw_root()
         while (node is not None and node.parent is not None
                and node.parent.parent is not hw_root):
