@@ -187,6 +187,26 @@ def test_stop_waits_for_a_transfer_in_flight_to_end():
     asyncio.run(run())
 
 
+def test_stop_fails_what_it_leaves_unanswered():
+    """The receive in flight and the ones queued behind it fail once
+    stopped, rather than leave their callers waiting forever."""
+    async def run():
+        class Silent(FakeIn):
+            async def read(self, size=0, timeout=None):
+                await asyncio.sleep(3600)
+
+        link = UsbFramed(FakeOut(), Silent(), MPS)
+        receives = [link.recv(), link.recv()]
+        for _ in range(5):
+            await asyncio.sleep(0)
+        await asyncio.wait_for(link.stop(), 1.0)
+        for receive in receives:
+            with pytest.raises(ConnectionError):
+                await asyncio.wait_for(receive, 1.0)
+
+    asyncio.run(run())
+
+
 # -- finding the rack on the device -----------------------------------------
 
 class FakeEndpoint:

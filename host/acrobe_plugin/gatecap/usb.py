@@ -93,6 +93,7 @@ class UsbFramed(Datagram):
             try:
                 await self.__write_frame(data)
             except asyncio.CancelledError:
+                self.__fail(future, self.__stopped())
                 raise
             except BaseException as exc:  # noqa: BLE001 -- forward to caller
                 self.__fail(future, exc)
@@ -106,6 +107,7 @@ class UsbFramed(Datagram):
             try:
                 frame = await self.__read_frame()
             except asyncio.CancelledError:
+                self.__fail(future, self.__stopped())
                 raise
             except BaseException as exc:  # noqa: BLE001 -- forward to caller
                 self.__fail(future, exc)
@@ -117,6 +119,9 @@ class UsbFramed(Datagram):
     def __fail(future, exc):
         if future is not None and not future.done():
             future.set_exception(exc)
+
+    def __stopped(self):
+        return ConnectionError(f"{self.name} stopped")
 
     async def __write_frame(self, data):
         """One datagram out. A frame that is a whole number of packets ends on
@@ -154,7 +159,9 @@ class UsbFramed(Datagram):
 
     async def stop(self):
         """Cancels the loops and waits for them to end: a transfer they
-        leave in flight keeps the device handle from closing."""
+        leave in flight keeps the device handle from closing.  The sends
+        and receives they did not get to fail, rather than leave their
+        callers waiting."""
         tasks = [t for t in (self.__writer, self.__reader) if t is not None]
         self.__writer = None
         self.__reader = None
@@ -165,6 +172,11 @@ class UsbFramed(Datagram):
                 await task
             except asyncio.CancelledError:
                 pass
+        while self.__sends:
+            _data, future = self.__sends.popleft()
+            self.__fail(future, self.__stopped())
+        while self.__recvs:
+            self.__fail(self.__recvs.popleft(), self.__stopped())
 
 
 @adapter_db.register(AdapterInfo("gatecap", vid=0x1500, pid=0xdeca))
