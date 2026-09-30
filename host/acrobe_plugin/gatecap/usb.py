@@ -153,11 +153,18 @@ class UsbFramed(Datagram):
             return
 
     async def stop(self):
-        for task in (self.__writer, self.__reader):
-            if task is not None:
-                task.cancel()
+        """Cancels the loops and waits for them to end: a transfer they
+        leave in flight keeps the device handle from closing."""
+        tasks = [t for t in (self.__writer, self.__reader) if t is not None]
         self.__writer = None
         self.__reader = None
+        for task in tasks:
+            task.cancel()
+        for task in tasks:
+            try:
+                await task
+            except asyncio.CancelledError:
+                pass
 
 
 @adapter_db.register(AdapterInfo("gatecap", vid=0x1500, pid=0xdeca))

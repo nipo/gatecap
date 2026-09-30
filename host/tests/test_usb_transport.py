@@ -160,6 +160,33 @@ def test_a_failing_transfer_reaches_the_caller_and_the_reader_survives_it():
     linked(body)
 
 
+def test_stop_waits_for_a_transfer_in_flight_to_end():
+    """stop() returns once its loops ended: a read still in flight when the
+    adapter closes the device handle stalls the close."""
+    async def run():
+        ended = []
+
+        class Pending(FakeIn):
+            async def read(self, size=0, timeout=None):
+                ended.append("submitted")
+                try:
+                    await asyncio.sleep(3600)
+                finally:
+                    # What ausb does on cancellation: cancel the transfer
+                    # and wait for libusb to report it.
+                    await asyncio.sleep(0.01)
+                    ended.append("read")
+
+        link = UsbFramed(FakeOut(), Pending(), MPS)
+        link.recv()
+        while not ended:
+            await asyncio.sleep(0)
+        await asyncio.wait_for(link.stop(), 1.0)
+        assert ended == ["submitted", "read"]
+
+    asyncio.run(run())
+
+
 # -- finding the rack on the device -----------------------------------------
 
 class FakeEndpoint:
