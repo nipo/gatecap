@@ -600,8 +600,9 @@ class ControlConsole(ConsoleAdaptor, WaveformView):
     @classmethod
     def __csv_rle(cls, result):
         # Change-based CSV: one row per run at its start cycle relative to the
-        # trigger (pre-trigger runs are negative). Keeps a long/idle capture
-        # compact instead of expanding runs to millions of samples.
+        # trigger (pre-trigger runs are negative), with its dwell so the last
+        # run keeps its length. Keeps a long/idle capture compact instead of
+        # expanding runs to millions of samples.
         layout = cls.__layout(result)
         runs = result["runs"]
         # cycle 0 is the trigger, skewed back by the trigger latency.
@@ -609,9 +610,9 @@ class ControlConsole(ConsoleAdaptor, WaveformView):
                  + result.get("trigger_latency", 0))
         out = io.StringIO()
         writer = csv.writer(out)
-        writer.writerow(["cycle"] + cls.__columns(layout))
+        writer.writerow(["cycle", "dwell"] + cls.__columns(layout))
         for value, dwell in runs:
-            writer.writerow([cycle] + cls.__cells(layout, value))
+            writer.writerow([cycle, dwell] + cls.__cells(layout, value))
             cycle += dwell
         return out.getvalue()
 

@@ -39,11 +39,16 @@ class WaveformView:
                 samples = [s for win in result["windows"] for s in win]
                 for i, sample in enumerate(samples):
                     layout.emit(writer, i * period_ps, sample)
+                t = len(samples)
             else:
                 t = 0
                 for value, count in result["runs"]:
                     layout.emit(writer, t * period_ps, value)
                     t += count
+            # A change-based file only says when values start; without a
+            # closing timestamp the last sample, or the whole last run, has no
+            # duration at all.
+            writer.close(t * period_ps)
         return buf.getvalue().encode(), self.__markers(result, period_ps)
 
     @staticmethod

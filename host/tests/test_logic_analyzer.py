@@ -23,6 +23,7 @@ from acrobe_plugin.gatecap.instrument.la.driver import (LOGIC_ANALYZER_UUID,
 from acrobe_plugin.gatecap.instrument.la.compose import (ComposedTrace,
                                                                  DomainTrace,
                                                                  Timebase)
+from acrobe_plugin.gatecap.instrument.la.waveform import WaveformView
 from acrobe_plugin.gatecap.instrument.la.plan import (Duration,
                                                              GroupWindow)
 from acrobe_plugin.gatecap.rack import Instrument as Envelope
@@ -263,6 +264,40 @@ def test_vcd_carries_one_scope_per_member_and_the_enum_labels():
     assert "$var string 1" in vcd and "state" in vcd
     for label in ("sIDLE", "sDONE", "sBUSY"):
         assert label in vcd
+
+
+def rle_result(runs, trigger_run=0):
+    return {"kind": "rle", "names": ["v[0]", "v[1]"],
+            "sample_rate": 100_000_000, "enums": {}, "runs": runs,
+            "trigger_run": trigger_run, "trigger_latency": 0}
+
+
+def test_the_last_run_keeps_its_dwell_in_the_vcd():
+    # Two changes then a long run of the second: the file must hold the
+    # second value for its whole dwell, not end on its first cycle.
+    vcd = WaveformView().to_vcd(rle_result([(1, 1), (2, 8)]))[0].decode()
+    stamps = [int(line[1:]) for line in vcd.splitlines()
+              if line.startswith("#")]
+    assert stamps == [0, 10_000, 90_000]
+
+
+def test_the_last_raw_sample_keeps_its_period_in_the_vcd():
+    vcd = WaveformView().to_vcd(
+        raw_result(["w"], 100_000_000, [[0, 1, 0]], 0))[0].decode()
+    assert vcd.splitlines()[-1] == "#30000"
+
+
+def test_a_composed_trace_ends_with_its_longest_member():
+    control = raw_result(["s"], 100_000_000, [[0, 1, 0]], 1)
+    rle = rle_result([(1, 1), (2, 8)], trigger_run=1)
+    assert DomainTrace("rle.control", rle).end(0) == 8
+    composed = ComposedTrace([("control.control", control),
+                              ("rle.control", rle)])
+    # Both triggers at tick 10_000; the RLE member holds 8 cycles past it.
+    assert composed.trigger_ticks == [10_000]
+    assert composed.end == 90_000
+    vcd = composed.to_vcd()[0].decode()
+    assert vcd.splitlines()[-1] == "#90000"
 
 
 # -- the group driver -------------------------------------------------------

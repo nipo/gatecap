@@ -110,18 +110,32 @@ class DomainTrace:
         if window:
             raise IndexError(f"member {self.name!r} is run-length encoded and "
                              f"has a single window")
-        runs = self.result["runs"]
+        out = []
+        cycle = -self.__rle_trigger()
+        for value, dwell in self.result["runs"]:
+            out.append((cycle, value))
+            cycle += dwell
+        return out
+
+    def end(self, window):
+        """Cycle, counted from this member's trigger instant, at which its
+        last sample of ``window`` stops holding."""
+        if self.kind == "raw":
+            samples = self.result["windows"][window]
+            return len(samples) - (self.result.get("trigger_index") or 0)
+        if window:
+            raise IndexError(f"member {self.name!r} is run-length encoded and "
+                             f"has a single window")
+        return (sum(dwell for _, dwell in self.result["runs"])
+                - self.__rle_trigger())
+
+    def __rle_trigger(self):
         # The decoded stream starts at cycle 0; the trigger sits at the end of
         # the pre-trigger runs, skewed back into them by the latency the member
         # reports (see the module docstring).
-        trigger = (sum(dwell for _, dwell in runs[:self.result["trigger_run"]])
-                   - self.result.get("trigger_latency", 0))
-        out = []
-        cycle = 0
-        for value, dwell in runs:
-            out.append((cycle - trigger, value))
-            cycle += dwell
-        return out
+        runs = self.result["runs"]
+        return (sum(dwell for _, dwell in runs[:self.result["trigger_run"]])
+                - self.result.get("trigger_latency", 0))
 
 
 class ComposedTrace:
@@ -161,13 +175,14 @@ class ComposedTrace:
                       for cycle, sample in member.events(window)]
                      for member, period in zip(self.members, self.periods)]
                     for window in range(self.window_count)]
-        gap = max(self.periods)
+        ends = [max(member.end(window) * period
+                    for member, period in zip(self.members, self.periods))
+                for window in range(self.window_count)]
         self.events = []          # (tick, member index, sample), time ordered
         self.markers = []
         origin = 0
         for window, per_member in enumerate(relative):
-            ticks = [t for member in per_member for t, _ in member]
-            first, last = min(ticks), max(ticks)
+            first = min(t for member in per_member for t, _ in member)
             origin -= first       # the earliest sample of this window at origin+first
             for index, member in enumerate(per_member):
                 for tick, sample in member:
@@ -178,7 +193,10 @@ class ComposedTrace:
                 self.markers.append((f"trig{window}", origin))
             else:
                 self.markers.append(("trigger", origin))
-            origin += last + gap
+            # The next window starts where the longest-lasting member's last
+            # sample stops holding.
+            origin += ends[window]
+        self.end = origin
         self.events.sort(key=lambda event: (event[0], event[1]))
 
     @property
@@ -198,4 +216,5 @@ class ComposedTrace:
                 member.layout.register(writer, root=member.scope)
             for tick, index, sample in self.events:
                 self.members[index].layout.emit(writer, tick, sample)
+            writer.close(self.end)
         return buf.getvalue().encode(), list(self.markers)
